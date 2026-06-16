@@ -47,6 +47,6 @@
     "asarUnpack": ["**/node_modules/better-sqlite3/**", "**/node_modules/ffmpeg-static/**", "**/node_modules/ffprobe-static/**"],
     "mac": { "target": ["dmg", "zip"], "category": "public.app-category.video", "identity": null },
     "win": { "target": "nsis" },
-    "publish": [{ "provider": "github", "owner": "Okohedeki", "repo": "VaultOP" }]
+    "publish": [{ "provider": "github", "owner": "Okohedeki", "repo": "VaultOP", "releaseType": "release" }]
   }
 }

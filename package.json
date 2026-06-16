@@ -1,0 +1,52 @@
+{
+  "name": "vaultop",
+  "version": "0.1.0",
+  "description": "VaultOP — local-first media pipeline for content creators. The vault is the spine.",
+  "private": true,
+  "main": "out/main/index.js",
+  "author": "Edeki Okoh",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/Okohedeki/VaultOP.git" },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "start": "electron-vite preview",
+    "smoke": "TSX_TSCONFIG_PATH=tsconfig.node.json node --import tsx scripts/smoke-phase0.ts",
+    "test": "vitest run",
+    "dist:mac": "electron-vite build && electron-builder --mac --arm64",
+    "dist:win": "electron-vite build && electron-builder --win --x64",
+    "rebuild:electron": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.4",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  },
+  "build": {
+    "appId": "com.vaultop.app",
+    "productName": "VaultOP",
+    "files": ["out/**/*", "db/**/*"],
+    "asarUnpack": ["**/node_modules/better-sqlite3/**", "**/node_modules/ffmpeg-static/**", "**/node_modules/ffprobe-static/**"],
+    "mac": { "target": ["dmg", "zip"], "category": "public.app-category.video", "identity": null },
+    "win": { "target": "nsis" },
+    "publish": [{ "provider": "github", "owner": "Okohedeki", "repo": "VaultOP" }]
+  }
+}

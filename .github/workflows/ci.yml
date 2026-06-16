@@ -7,7 +7,13 @@ on:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    # Test on the actual shipping platforms (desktop macOS + Windows), not Linux —
+    # the app never runs on Linux, and the Linux ffmpeg-static build is unreliable.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,4 +26,5 @@ jobs:
       - name: Unit tests
         run: npm test
       - name: End-to-end smoke (ingest → library → search → assembly → blur gate)
+        if: runner.os == 'macOS'
         run: npm run smoke

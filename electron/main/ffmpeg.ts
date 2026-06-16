@@ -320,8 +320,10 @@ function run(bin: string, args: string[]): Promise<string> {
     child.stdout.on('data', (d) => (stdout += d))
     child.stderr.on('data', (d) => (stderr += d))
     child.on('error', reject)
-    child.on('close', (code) =>
-      code === 0 ? resolve(stdout) : reject(new Error(`${bin} exited ${code}: ${stderr.slice(-500)}`)),
+    child.on('close', (code, signal) =>
+      code === 0
+        ? resolve(stdout)
+        : reject(new Error(`${bin} exited code=${code} signal=${signal}: ${stderr.slice(-500)}`)),
     )
   })
 }
@@ -355,12 +357,12 @@ function runWithProgress(
       stderrTail = (stderrTail + d).slice(-1000)
     })
     child.on('error', reject)
-    child.on('close', (code) => {
+    child.on('close', (code, signal) => {
       if (code === 0) {
         resolve()
       } else {
-        log.error('ffmpeg.failed', { code, stderr: stderrTail })
-        reject(new Error(`ffmpeg exited ${code}: ${stderrTail.slice(-500)}`))
+        log.error('ffmpeg.failed', { code, signal, stderr: stderrTail })
+        reject(new Error(`ffmpeg exited code=${code} signal=${signal}: ${stderrTail.slice(-500)}`))
       }
     })
   })

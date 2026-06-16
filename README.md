@@ -1,9 +1,22 @@
 # VaultOP
 
+[![ci](https://github.com/Okohedeki/VaultOP/actions/workflows/ci.yml/badge.svg)](https://github.com/Okohedeki/VaultOP/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![release](https://img.shields.io/github/v/release/Okohedeki/VaultOP)](https://github.com/Okohedeki/VaultOP/releases/latest)
+
 Local-first, **MIT-licensed** media pipeline for content creators. **The vault is the
 spine** — an analyzed, encrypted, content-addressed library; editing, compilations, and
 blur are operations on what's in it. Content never leaves the machine, and everything
 runs natively (no Python, no cloud).
+
+## Download
+
+Grab an installer from the **[latest release](https://github.com/Okohedeki/VaultOP/releases/latest)**:
+- **macOS (Apple Silicon)** — `.dmg`. Unsigned demo build: first launch → right-click → **Open**, or `xattr -cr /Applications/VaultOP.app`.
+- **Windows** — NSIS `.exe` installer.
+
+Verify any build end to end without the GUI: `VaultOP --selftest` runs the full
+pipeline (ingest → encrypt → scene-split → tag → teaser + blur gate) and exits 0/1.
 
 > Status: **the MVP wedge is functional and verified end-to-end** — ingest → tagged,
 > scene-split, searchable library → one-click teaser + cross-library compilation →

@@ -7,3 +7,14 @@ dist/
 
 # Local Claude Code skills/config — not part of the product
 .claude/
+
+# Signing material — NEVER commit certs/keys (repo is public)
+*.cer
+*.p12
+*.p8
+*.pem
+*.key
+*.mobileprovision
+*.certSigningRequest
+/signing/
+/certs/

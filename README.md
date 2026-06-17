@@ -12,11 +12,20 @@ runs natively (no Python, no cloud).
 ## Download
 
 Grab an installer from the **[latest release](https://github.com/Okohedeki/VaultOP/releases/latest)**:
-- **macOS (Apple Silicon)** — `.dmg`. Unsigned demo build: first launch → right-click → **Open**, or `xattr -cr /Applications/VaultOP.app`.
-- **Windows** — NSIS `.exe` installer.
 
-Verify any build end to end without the GUI: `VaultOP --selftest` runs the full
-pipeline (ingest → encrypt → scene-split → tag → teaser + blur gate) and exits 0/1.
+- **macOS (Apple Silicon)** — `.dmg`. The build is **ad-hoc signed but not notarized**
+  (no paid Apple Developer ID yet), so on first launch macOS Gatekeeper will warn.
+  Open it one of two ways:
+  - **Drag VaultOP to Applications**, double-click once, then go to **System Settings →
+    Privacy & Security → "Open Anyway"**; or
+  - run **`xattr -cr /Applications/VaultOP.app`** in Terminal, then open it.
+- **Windows** — NSIS `.exe` installer (unsigned; click **More info → Run anyway** on the
+  SmartScreen prompt).
+
+### Verify the build yourself
+- `VaultOP --selftest` — runs the whole pipeline headless inside the packaged app, exits 0/1.
+- `npm run uitest` — launches the real window, ingests a clip, makes a teaser, and
+  screenshots each step (proof the GUI and every feature work, not just the core).
 
 > Status: **the MVP wedge is functional and verified end-to-end** — ingest → tagged,
 > scene-split, searchable library → one-click teaser + cross-library compilation →

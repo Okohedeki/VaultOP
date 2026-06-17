@@ -1,6 +1,6 @@
 {
   "name": "vaultop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "VaultOP — local-first media pipeline for content creators. The vault is the spine.",
   "private": true,
   "main": "out/main/index.js",
@@ -13,6 +13,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "start": "electron-vite preview",
     "smoke": "TSX_TSCONFIG_PATH=tsconfig.node.json node --import tsx scripts/smoke-phase0.ts",
+    "selftest": "npm run build && npm run rebuild:electron && electron . --selftest",
+    "uitest": "npm run build && npm run rebuild:electron && electron . --uitest",
     "test": "vitest run",
     "dist:mac": "electron-vite build && electron-builder --mac --arm64",
     "dist:win": "electron-vite build && electron-builder --win --x64",
@@ -45,6 +47,7 @@
     "productName": "VaultOP",
     "files": ["out/**/*", "db/**/*"],
     "asarUnpack": ["**/node_modules/better-sqlite3/**", "**/node_modules/ffmpeg-static/**", "**/node_modules/ffprobe-static/**"],
+    "afterPack": "build/afterPack.cjs",
     "mac": { "target": ["dmg", "zip"], "category": "public.app-category.video", "identity": null },
     "win": { "target": "nsis" },
     "publish": [{ "provider": "github", "owner": "Okohedeki", "repo": "VaultOP", "releaseType": "release" }]

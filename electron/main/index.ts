@@ -10,9 +10,11 @@ import { createVaultContext, type VaultContext } from './context'
 import { loadOrCreateMasterKey } from './masterkey'
 import { broadcastState, registerIpc } from './ipc'
 import { runSelfTest } from './selftest'
+import { runUiTest } from './uitest'
 import { errorMessage, log } from './log'
 
 const IS_SELFTEST = process.argv.includes('--selftest')
+const IS_UITEST = process.argv.includes('--uitest')
 
 let mainWindow: BrowserWindow | null = null
 let ctx: VaultContext | null = null
@@ -57,6 +59,12 @@ app.whenReady().then(async () => {
   // then exit. Needs no window/display — safe for CI and sandboxes.
   if (IS_SELFTEST) {
     const ok = await runSelfTest(loadSchemaSql())
+    app.exit(ok ? 0 : 1)
+    return
+  }
+
+  if (IS_UITEST) {
+    const ok = await runUiTest(loadSchemaSql(), app.getPath('temp'))
     app.exit(ok ? 0 : 1)
     return
   }

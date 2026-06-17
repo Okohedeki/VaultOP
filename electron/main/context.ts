@@ -54,6 +54,7 @@ export interface CreateContextOpts {
 }
 
 export function createVaultContext(opts: CreateContextOpts): VaultContext {
+  const notify = opts.onChanged ?? ((): void => {})
   const paths = resolveVaultPaths(opts.baseDir)
   const db: Db = openDb(paths.dbFile, opts.schemaSql)
   const repo = new Repo(db)
@@ -168,6 +169,7 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
         const blob = await blobs.putFile(outFile)
         repo.replaceVariantBlob(variantId, blob.uri, variant.durationMs ?? 0)
         repo.setReviewVerdict(variantId, 'approved')
+        notify() // push the unlocked/exportable state to the UI
       } finally {
         await rm(inFile, { force: true })
         await rm(outFile, { force: true })
@@ -175,6 +177,7 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
     },
     rejectReview(variantId: string): void {
       repo.setReviewVerdict(variantId, 'rejected')
+      notify()
     },
     async readVariantFrameDataUrl(variantId: string): Promise<string | null> {
       const variant = repo.getVariant(variantId)

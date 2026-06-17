@@ -108,6 +108,27 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     )
     await shot('4-teaser-gate')
 
+    // ── 5. Review the teaser → modal opens, approve → export unlocks ─────────
+    await js(
+      `[...document.querySelectorAll('button')].find(b=>/review to unlock/i.test(b.textContent))?.click(); true`,
+    )
+    await wait(1400) // modal mounts + review frame decrypts
+    checks.reviewModal = await js<boolean>(`!!document.querySelector('.modal-backdrop')`)
+    await shot('5-review')
+    await js(
+      `[...document.querySelectorAll('.modal button')].find(b=>/approve/i.test(b.textContent))?.click(); true`,
+    )
+    checks.approved = await pollUntil(
+      () => ctx!.repo.getVariant(ctx!.repo.listVariants()[0]!.id)?.reviewState === 'approved',
+      40_000,
+    )
+    await wait(900) // let the unlocked state broadcast to the UI
+    checks.exportUnlocked = await js<boolean>(
+      `[...document.querySelectorAll('.app__side button')].some(b=>/export/i.test(b.textContent)) ` +
+        `|| [...document.querySelectorAll('.vop-badge')].some(b=>/safe to post/i.test(b.textContent))`,
+    )
+    await shot('6-approved')
+
     const ok = Object.values(checks).every((v) => v === true)
     log.info('uitest.result', { ...checks, shotDir })
     // eslint-disable-next-line no-console

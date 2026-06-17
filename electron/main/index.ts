@@ -11,10 +11,13 @@ import { loadOrCreateMasterKey } from './masterkey'
 import { broadcastState, registerIpc } from './ipc'
 import { runSelfTest } from './selftest'
 import { runUiTest } from './uitest'
-import { errorMessage, log } from './log'
+import { runCli } from './cli'
+import { errorMessage, log, routeLogsToStderr } from './log'
 
 const IS_SELFTEST = process.argv.includes('--selftest')
 const IS_UITEST = process.argv.includes('--uitest')
+const CLI_INDEX = process.argv.indexOf('--cli')
+const IS_CLI = CLI_INDEX !== -1
 
 let mainWindow: BrowserWindow | null = null
 let ctx: VaultContext | null = null
@@ -54,7 +57,24 @@ function createWindow(): void {
   }
 }
 
+// In CLI mode, keep the app from showing in the dock and route logs to stderr so
+// stdout is pure JSON. Must be set before whenReady.
+if (IS_CLI) {
+  routeLogsToStderr()
+  app.dock?.hide()
+}
+
 app.whenReady().then(async () => {
+  // Headless CLI for agents/users: run one command against the shared vault, exit.
+  if (IS_CLI) {
+    const code = await runCli(process.argv.slice(CLI_INDEX + 1), {
+      userData: app.getPath('userData'),
+      schemaSql: loadSchemaSql(),
+    })
+    app.exit(code)
+    return
+  }
+
   // Headless self-test: verify the Electron runtime + native modules + pipeline,
   // then exit. Needs no window/display — safe for CI and sandboxes.
   if (IS_SELFTEST) {

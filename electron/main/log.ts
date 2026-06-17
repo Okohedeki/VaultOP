@@ -7,9 +7,16 @@ export interface LogFields {
   [key: string]: unknown
 }
 
+let allToStderr = false
+
+/** Route ALL log lines to stderr — used in CLI mode so stdout stays clean JSON. */
+export function routeLogsToStderr(): void {
+  allToStderr = true
+}
+
 function emit(level: Level, msg: string, fields?: LogFields): void {
   const line = JSON.stringify({ t: Date.now(), level, msg, ...fields })
-  if (level === 'error' || level === 'warn') process.stderr.write(line + '\n')
+  if (allToStderr || level === 'error' || level === 'warn') process.stderr.write(line + '\n')
   else process.stdout.write(line + '\n')
 }
 

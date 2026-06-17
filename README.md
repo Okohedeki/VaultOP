@@ -62,6 +62,24 @@ NudeNet (MIT) for explicit-region detection, OpenCLIP (MIT) for semantic tags, w
 `onnxruntime-node` (CoreML on macOS, DirectML on Windows) and whisper.cpp. The mandatory
 human gate sits on top of detection regardless.
 
+## For agents & automation (CLI + MCP)
+
+VaultOP runs headlessly so **AI agents and scripts** can drive the whole pipeline against
+the **same encrypted vault** as the GUI. Full reference: [AGENTS.md](AGENTS.md).
+
+- **CLI** — `VaultOP --cli <command>`, JSON in/out (`bin/vaultop` wraps it):
+  ```bash
+  vaultop ingest ./shoot.mov        # → encrypts, scene-splits, tags; waits until ready
+  vaultop search "bedroom short"    # → matching segments + tags
+  vaultop teaser <assetId>          # → 30s vertical teaser (enters the review gate)
+  vaultop export <variantId> out.mp4  # → blocked until reviewed + approved
+  ```
+- **MCP server** — `mcp/server.mjs` exposes 15 tools for MCP clients (Claude Desktop /
+  Claude Code). See [mcp/README.md](mcp/README.md).
+
+The **blur-review gate is enforced for agents too**: a platform-bound teaser cannot be
+exported until a human/agent explicitly approves it — there is no bypass.
+
 ## Architecture
 
 - **Electron** (Node main) + **React/TS** (Vite) renderer. `contextIsolation: true`,

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Thin wrapper around `VaultOP --cli`. Finds the installed app, an explicit
+# $VAULTOP_BIN, or falls back to running from source. Passes all args through.
+set -euo pipefail
+
+if [[ -n "${VAULTOP_BIN:-}" ]]; then
+  exec "$VAULTOP_BIN" --cli "$@"
+fi
+
+# Common installed locations.
+MAC_APP="/Applications/VaultOP.app/Contents/MacOS/VaultOP"
+WIN_APP="$LOCALAPPDATA/Programs/VaultOP/VaultOP.exe"
+
+if [[ -x "$MAC_APP" ]]; then
+  exec "$MAC_APP" --cli "$@"
+elif [[ -x "${WIN_APP:-}" ]]; then
+  exec "$WIN_APP" --cli "$@"
+fi
+
+# Fall back to running from a source checkout (this script's repo).
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -d "$REPO/out/main" ]]; then
+  exec npx --prefix "$REPO" electron "$REPO" --cli "$@"
+fi
+
+echo '{"ok":false,"error":"VaultOP not found — install it, set VAULTOP_BIN, or build from source (npm run build && npm run rebuild:electron)"}' >&2
+exit 1

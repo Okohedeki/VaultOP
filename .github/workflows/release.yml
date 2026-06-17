@@ -1,6 +1,6 @@
 name: release
 
-# Push a tag like v0.1.0 to build and publish installers for both platforms.
+# Push a tag like v0.1.4 to build, sign, notarize, and publish installers.
 on:
   push:
     tags: ['v*']
@@ -9,14 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  installers:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest # Apple Silicon → .dmg + .zip
-          - os: windows-latest # → NSIS .exe
-    runs-on: ${{ matrix.os }}
+  mac:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,11 +18,30 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Build renderer/main/preload bundles
-        run: npm run build
-      - name: Build & publish installer
+      - run: npm run build
+      - name: Build, sign, notarize & publish (macOS)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Unsigned builds for now (demo). Add signing certs later via secrets.
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --publish always
+          # Developer ID Application cert (.p12 base64) + its password.
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          # Notarization credentials.
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npx electron-builder --mac --publish always
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Build & publish (Windows)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish always

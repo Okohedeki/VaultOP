@@ -1,6 +1,6 @@
 {
   "name": "vaultop",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "VaultOP — local-first media pipeline for content creators. The vault is the spine.",
   "private": true,
   "main": "out/main/index.js",
@@ -59,15 +59,18 @@
       "**/node_modules/ffmpeg-static/**",
       "**/node_modules/ffprobe-static/**"
     ],
-    "afterPack": "build/afterPack.cjs",
     "mac": {
       "target": [
         "dmg",
         "zip"
       ],
       "category": "public.app-category.video",
-      "identity": null
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
+    "afterSign": "build/notarize.cjs",
     "win": {
       "target": "nsis"
     },

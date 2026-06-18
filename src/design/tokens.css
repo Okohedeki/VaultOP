@@ -1,29 +1,40 @@
-/* VaultOP design tokens. One source of truth for spacing, color, type, radius.
-   Dark by default — this is an editing app that lives next to video. */
+/* VaultOP — "Midnight Studio" design tokens.
+   Cinematic, premium, creator-energy. Dark base with warmth, a vibrant
+   pink→violet "creator sunset" gradient as the signature accent, real depth.
+   Built for content creators, not developers. */
 
 :root {
-  /* surfaces */
-  --bg: #0b0c10;
-  --bg-elev: #14161c;
-  --bg-elev-2: #1b1e26;
-  --bg-input: #0f1116;
-  --border: #262a35;
-  --border-strong: #343a48;
+  /* ── surfaces (dark, faint cool-violet warmth, layered depth) ── */
+  --bg: #0b0b12;
+  --bg-deep: #07070c;
+  --bg-elev: #14141f;
+  --bg-elev-2: #1c1c2b;
+  --bg-input: #100f1a;
+  --border: #262636;
+  --border-strong: #34344a;
+  --hairline: rgba(255, 255, 255, 0.06);
 
-  /* text */
-  --fg: #e8eaf0;
-  --fg-muted: #9aa1b2;
-  --fg-faint: #646b7d;
+  /* ── text ── */
+  --fg: #f5f4fb;
+  --fg-muted: #a3a0bb;
+  --fg-faint: #6c6a85;
 
-  /* brand + status */
-  --accent: #6d8bff;
-  --accent-hover: #819cff;
-  --accent-contrast: #0b0c10;
-  --ok: #3ecf8e;
-  --warn: #ffcf5c;
-  --danger: #ff6b6b;
+  /* ── signature accent: creator-sunset gradient (pink → violet) ── */
+  --accent: #ff5c8a;
+  --accent-2: #a855f7;
+  --accent-hover: #ff75a0;
+  --accent-contrast: #ffffff;
+  --grad: linear-gradient(135deg, #ff5c8a 0%, #c462f5 55%, #a855f7 100%);
+  --grad-soft: linear-gradient(135deg, rgba(255, 92, 138, 0.18), rgba(168, 85, 247, 0.18));
+  --glow: radial-gradient(60% 80% at 50% 0%, rgba(196, 98, 245, 0.16), transparent 70%);
 
-  /* spacing scale (4px base) */
+  /* ── status (soft, friendly) ── */
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #fb7185;
+  --info: #60a5fa;
+
+  /* ── spacing (4px base) ── */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -31,31 +42,40 @@
   --sp-5: 24px;
   --sp-6: 32px;
   --sp-7: 48px;
+  --sp-8: 64px;
 
-  /* radius */
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 16px;
+  /* ── radius ── */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-pill: 999px;
 
-  /* type */
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  /* ── type: clean, premium system sans — no monospace in the UI ── */
+  --font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-num: 'SF Pro Text', -apple-system, 'Segoe UI', system-ui, sans-serif;
   --fs-xs: 12px;
   --fs-sm: 13px;
   --fs-md: 14px;
-  --fs-lg: 17px;
-  --fs-xl: 22px;
-  --fs-2xl: 30px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 26px;
+  --fs-3xl: 34px;
+  --lh: 1.5;
 
-  /* elevation */
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-2: 0 8px 30px rgba(0, 0, 0, 0.45);
-
-  --transition: 140ms cubic-bezier(0.2, 0, 0, 1);
+  /* ── elevation & motion ── */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --shadow-3: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --shadow-accent: 0 8px 30px rgba(196, 98, 245, 0.28);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 130ms var(--ease);
+  --t: 200ms var(--ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --transition: 0ms;
+    --t-fast: 0ms;
+    --t: 0ms;
   }
 }

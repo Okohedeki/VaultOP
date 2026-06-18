@@ -1,109 +1,130 @@
-/* Primitive component styles. No ad-hoc inline styling elsewhere — compose these. */
+/* Primitive component styles — Midnight Studio. Compose these; no ad-hoc styling. */
 
 .vop-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--sp-2);
   border: 1px solid var(--border-strong);
   background: var(--bg-elev-2);
   color: var(--fg);
-  padding: var(--sp-2) var(--sp-4);
+  padding: 10px 16px;
   border-radius: var(--r-md);
   font-size: var(--fs-md);
-  font-weight: 550;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+  transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast),
+    box-shadow var(--t-fast), opacity var(--t-fast);
 }
 .vop-btn:hover:not(:disabled) {
-  background: var(--border);
+  background: #23233300;
+  background-color: #232333;
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 .vop-btn:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(0);
 }
 .vop-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* primary = the signature creator-sunset gradient with a soft glow */
 .vop-btn--primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--grad);
+  border: none;
   color: var(--accent-contrast);
+  box-shadow: var(--shadow-accent);
+  padding: 11px 18px;
 }
 .vop-btn--primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  filter: brightness(1.06);
+  box-shadow: 0 10px 36px rgba(196, 98, 245, 0.4);
+  transform: translateY(-1px);
 }
 
 .vop-card {
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg-elev), #12121c);
+  border: 1px solid var(--hairline);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-1);
 }
 
+/* status pills — soft tinted backgrounds, color = meaning */
 .vop-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: var(--fs-xs);
   font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 999px;
-  border: 1px solid var(--border-strong);
+  padding: 4px 11px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
   color: var(--fg-muted);
-  text-transform: capitalize;
-  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.05);
+  letter-spacing: 0.01em;
 }
 .vop-badge__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
   background: currentColor;
+  box-shadow: 0 0 8px currentColor;
 }
 .vop-badge--ok {
   color: var(--ok);
-  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+  background: rgba(52, 211, 153, 0.12);
 }
 .vop-badge--warn {
   color: var(--warn);
-  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  background: rgba(251, 191, 36, 0.12);
 }
 .vop-badge--danger {
   color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  background: rgba(251, 113, 133, 0.12);
 }
 .vop-badge--accent {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: #ff9dc0;
+  background: rgba(255, 92, 138, 0.14);
 }
 
 .vop-progress {
   position: relative;
-  height: 6px;
+  height: 7px;
   width: 100%;
   background: var(--bg-input);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   overflow: hidden;
 }
 .vop-progress__fill {
   position: absolute;
   inset: 0 auto 0 0;
-  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
-  border-radius: 999px;
-  transition: width var(--transition);
+  background: var(--grad);
+  border-radius: var(--r-pill);
+  transition: width var(--t);
+}
+.vop-progress__fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  background-size: 200px 100%;
+  animation: vop-shimmer 1.3s linear infinite;
 }
 
 .vop-spinner {
   width: 16px;
   height: 16px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 2px solid var(--border-strong);
   border-top-color: var(--accent);
   animation: vop-spin 0.7s linear infinite;
 }
 
 .vop-skeleton {
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   background: linear-gradient(90deg, var(--bg-elev) 25%, var(--bg-elev-2) 37%, var(--bg-elev) 63%);
   background-size: 800px 100%;
   animation: vop-shimmer 1.4s ease infinite;
@@ -116,11 +137,12 @@
   justify-content: center;
   text-align: center;
   gap: var(--sp-2);
-  padding: var(--sp-7) var(--sp-5);
+  padding: var(--sp-8) var(--sp-5);
   color: var(--fg-muted);
 }
 .vop-empty__title {
   color: var(--fg);
-  font-size: var(--fs-lg);
-  font-weight: 600;
+  font-size: var(--fs-xl);
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }

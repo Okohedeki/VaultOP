@@ -44,13 +44,16 @@ export function App() {
     <div className="app">
       <header className="app__header">
         <div className="app__brand">
-          <h1>VAULTOP</h1>
-          <span className="tag">local-first · encrypted</span>
+          <div className="app__logo">V</div>
+          <h1>
+            <span className="grad-text">Vault</span>OP
+          </h1>
+          <span className="tag">creator studio</span>
         </div>
         {activeCount > 0 ? (
-          <Badge tone="accent">{activeCount} processing</Badge>
+          <Badge tone="accent">{activeCount} processing…</Badge>
         ) : (
-          <Badge tone="ok">idle</Badge>
+          <Badge tone="ok">All caught up</Badge>
         )}
       </header>
 

@@ -16,8 +16,36 @@ body {
   color: var(--fg);
   font-family: var(--font);
   font-size: var(--fs-md);
-  line-height: 1.5;
+  line-height: var(--lh);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+/* Cinematic atmosphere: a soft sunset glow up top + deep vignette + fine grain,
+   so the app reads as a premium studio, never a flat dev panel. */
+#root {
+  position: relative;
+  isolation: isolate;
+}
+#root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(70% 50% at 78% -8%, rgba(168, 85, 247, 0.14), transparent 60%),
+    radial-gradient(60% 45% at 12% 0%, rgba(255, 92, 138, 0.1), transparent 55%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+}
+#root::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 h1,
@@ -32,24 +60,38 @@ button {
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--accent-contrast);
+  background: rgba(196, 98, 245, 0.35);
+  color: #fff;
 }
 
-/* Visible keyboard focus everywhere — never remove the outline outright. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+  border-radius: var(--r-sm);
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 999px;
-  border: 2px solid var(--bg);
+  border-radius: var(--r-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #45455f;
+  background-clip: content-box;
+}
+
+/* gradient text helper for the wordmark / headline accents */
+.grad-text {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 @keyframes vop-shimmer {
@@ -60,9 +102,32 @@ button {
     background-position: 400px 0;
   }
 }
-
 @keyframes vop-spin {
   to {
     transform: rotate(360deg);
   }
+}
+@keyframes vop-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes vop-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* staggered mount for lists/grids */
+.rise {
+  animation: vop-rise 0.5s var(--ease) both;
 }

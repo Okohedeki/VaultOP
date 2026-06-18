@@ -8,8 +8,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--sp-4) var(--sp-5);
-  border-bottom: 1px solid var(--border);
+  padding: var(--sp-4) var(--sp-6);
+  border-bottom: 1px solid var(--hairline);
+  background: linear-gradient(180deg, rgba(20, 20, 31, 0.7), transparent);
   -webkit-app-region: drag;
 }
 .app__header button {
@@ -17,17 +18,32 @@
 }
 .app__brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--sp-3);
 }
+.app__logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--grad);
+  box-shadow: var(--shadow-accent);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  flex: none;
+}
 .app__brand h1 {
-  font-size: var(--fs-lg);
-  letter-spacing: 0.04em;
+  font-size: var(--fs-xl);
+  font-weight: 750;
+  letter-spacing: -0.02em;
 }
 .app__brand .tag {
   color: var(--fg-faint);
   font-size: var(--fs-xs);
-  font-family: var(--mono);
+  font-weight: 500;
+  margin-left: 2px;
 }
 
 .app__body {

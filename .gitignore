@@ -5,8 +5,11 @@ dist/
 .DS_Store
 .vault-dev/
 
-# Local Claude Code skills/config — not part of the product
-.claude/
+# Local Claude Code config — ignore everything except committed project skills
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/incremental-commits/
 
 # Signing material — NEVER commit certs/keys (repo is public)
 *.cer

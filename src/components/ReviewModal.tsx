@@ -61,8 +61,8 @@ export function ReviewModal({ variantId, onClose, onDone }: Props) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__head">
-          <strong>Verify before posting</strong>
-          <Badge tone="warn">human gate</Badge>
+          <strong>Make it safe to post</strong>
+          <Badge tone="accent">safety check</Badge>
           <button className="modal__x" onClick={onClose} aria-label="Close">
             ✕
           </button>

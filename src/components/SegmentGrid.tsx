@@ -25,9 +25,11 @@ export function SegmentGrid({ asset, revision, onBack, onFindSimilar, onMakeTeas
         <div className="seg__title">
           <span className="seg__name">{asset.originalFilename}</span>
           {analyzing ? (
-            <Badge tone="accent">analyzing…</Badge>
+            <Badge tone="accent">finding scenes…</Badge>
           ) : (
-            <Badge tone="ok">{segments.length} segments</Badge>
+            <Badge tone="ok">
+              {segments.length} scene{segments.length === 1 ? '' : 's'}
+            </Badge>
           )}
         </div>
         {segments.length > 0 && (
@@ -45,7 +47,7 @@ export function SegmentGrid({ asset, revision, onBack, onFindSimilar, onMakeTeas
         </div>
       )}
 
-      {loadState === 'error' && <EmptyState title="Couldn’t load segments" hint={error ?? ''} />}
+      {loadState === 'error' && <EmptyState title="Couldn’t load scenes" hint={error ?? ''} />}
 
       {loadState === 'ready' && segments.length === 0 && (
         <EmptyState

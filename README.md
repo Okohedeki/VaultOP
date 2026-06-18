@@ -13,14 +13,11 @@ runs natively (no Python, no cloud).
 
 Grab an installer from the **[latest release](https://github.com/Okohedeki/VaultOP/releases/latest)**:
 
-- **macOS (Apple Silicon)** — `.dmg`. The build is **ad-hoc signed but not notarized**
-  (no paid Apple Developer ID yet), so on first launch macOS Gatekeeper will warn.
-  Open it one of two ways:
-  - **Drag VaultOP to Applications**, double-click once, then go to **System Settings →
-    Privacy & Security → "Open Anyway"**; or
-  - run **`xattr -cr /Applications/VaultOP.app`** in Terminal, then open it.
-- **Windows** — NSIS `.exe` installer (unsigned; click **More info → Run anyway** on the
-  SmartScreen prompt).
+- **macOS (Apple Silicon)** — `.dmg`, **signed with a Developer ID and notarized by
+  Apple**. Open it, drag **VaultOP** to Applications, and double-click — no warnings, no
+  workaround.
+- **Windows** — NSIS `.exe` installer (unsigned for now; click **More info → Run anyway**
+  on the SmartScreen prompt).
 
 ### Verify the build yourself
 - `VaultOP --selftest` — runs the whole pipeline headless inside the packaged app, exits 0/1.

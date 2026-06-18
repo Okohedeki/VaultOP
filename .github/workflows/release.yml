@@ -10,6 +10,10 @@ permissions:
 
 jobs:
   mac:
+    # Opt-in: only build/sign/notarize mac in CI once the signing secrets +
+    # repo variable MAC_SIGNING_ENABLED=true are set. Until then mac is built
+    # + notarized locally and uploaded, so CI must not publish an unsigned mac.
+    if: ${{ vars.MAC_SIGNING_ENABLED == 'true' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4

@@ -53,7 +53,9 @@ interface JobRow {
   updated_at: number
 }
 
-function mapAsset(r: AssetRow): Asset {
+function mapAsset(
+  r: AssetRow & { cover_segment_id?: string | null; segment_count?: number },
+): Asset {
   return {
     id: r.id,
     contentHash: r.content_hash,
@@ -62,6 +64,8 @@ function mapAsset(r: AssetRow): Asset {
     status: r.status as AssetStatus,
     ffprobe: r.ffprobe_json ? JSON.parse(r.ffprobe_json) : null,
     storageUri: r.storage_uri,
+    coverSegmentId: r.cover_segment_id ?? null,
+    segmentCount: r.segment_count ?? 0,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     error: r.error,
@@ -137,9 +141,22 @@ export class Repo {
   }
 
   listAssets(): Asset[] {
+    // Include each clip's cover (its first segment that has a thumbnail) so the
+    // vault renders as a visual grid, not a list of filenames.
     const rows = this.db
-      .prepare('SELECT * FROM asset ORDER BY created_at DESC')
-      .all() as AssetRow[]
+      .prepare(
+        `SELECT a.*, (
+           SELECT s.id FROM segment s JOIN master m ON m.id = s.master_id
+           WHERE m.asset_id = a.id AND s.keyframe_uri IS NOT NULL
+           ORDER BY s.start_ms ASC LIMIT 1
+         ) AS cover_segment_id,
+         (
+           SELECT COUNT(*) FROM segment s JOIN master m ON m.id = s.master_id
+           WHERE m.asset_id = a.id
+         ) AS segment_count
+         FROM asset a ORDER BY a.created_at DESC`,
+      )
+      .all() as Array<AssetRow & { cover_segment_id: string | null; segment_count: number }>
     return rows.map(mapAsset)
   }
 

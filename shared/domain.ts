@@ -46,6 +46,8 @@ export const Asset = z.object({
   status: AssetStatus,
   ffprobe: z.unknown().nullable(),
   storageUri: z.string().nullable(),
+  coverSegmentId: z.string().nullable(),
+  segmentCount: z.number().int(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   error: z.string().nullable(),

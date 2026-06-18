@@ -69,11 +69,128 @@
 }
 
 .section-title {
-  font-size: var(--fs-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--fg-faint);
+  font-size: var(--fs-md);
+  letter-spacing: -0.01em;
+  color: var(--fg);
   font-weight: 700;
+}
+.section-title span {
+  color: var(--fg-faint);
+  font-weight: 500;
+}
+
+/* ── Vault: visual clip grid ───────────────────────────────────────────── */
+.clip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--sp-4);
+  overflow: auto;
+  padding-bottom: var(--sp-5);
+  align-content: start;
+}
+.clip {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.clip--open {
+  cursor: pointer;
+}
+.clip__cover {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--bg-elev);
+  border: 1px solid var(--hairline);
+  transition: transform var(--t), box-shadow var(--t), border-color var(--t);
+}
+.clip--open:hover .clip__cover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-2);
+  border-color: rgba(196, 98, 245, 0.4);
+}
+.clip__cover .thumb {
+  width: 100%;
+  height: 100%;
+}
+.clip__cover-ph {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(80% 80% at 50% 40%, rgba(196, 98, 245, 0.16), transparent 70%),
+    var(--bg-elev-2);
+  color: var(--fg-faint);
+  font-size: 22px;
+}
+.clip__spark {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-pill);
+  background: var(--grad);
+  filter: blur(2px);
+  opacity: 0.7;
+  animation: vop-glow-pulse 1.8s ease infinite;
+}
+.clip--failed .clip__cover {
+  border-color: rgba(251, 113, 133, 0.5);
+}
+.clip__processing {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: linear-gradient(180deg, transparent, rgba(7, 7, 12, 0.92));
+  color: var(--fg);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.clip__count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(7, 7, 12, 0.72);
+  backdrop-filter: blur(6px);
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--fg);
+}
+.clip__cap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 2px;
+}
+.clip__name {
+  font-weight: 600;
+  font-size: var(--fs-md);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.clip__meta {
+  color: var(--fg-faint);
+  font-size: var(--fs-xs);
+}
+.clip--failed .clip__meta {
+  color: var(--danger);
+}
+
+.empty-orb {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-pill);
+  background: var(--grad);
+  box-shadow: var(--shadow-accent);
+  opacity: 0.9;
+  margin-bottom: var(--sp-2);
+  animation: vop-glow-pulse 2.4s ease infinite;
 }
 
 /* Dropzone */

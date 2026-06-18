@@ -5,7 +5,6 @@ import { Dropzone } from './components/Dropzone'
 import { AssetList } from './components/AssetList'
 import { SegmentGrid } from './components/SegmentGrid'
 import { SearchResults } from './components/SearchResults'
-import { JobsPanel } from './components/JobsPanel'
 import { DeliverablesPanel } from './components/DeliverablesPanel'
 import { ReviewModal } from './components/ReviewModal'
 import { Badge } from './design/primitives'
@@ -98,7 +97,12 @@ export function App() {
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Search the vault"
               />
-              <div className="section-title">Vault · {vault.assets.length} assets</div>
+              <div className="section-title">
+                Your vault{' '}
+                <span>
+                  · {vault.assets.length} clip{vault.assets.length === 1 ? '' : 's'}
+                </span>
+              </div>
               <AssetList
                 loadState={vault.loadState}
                 error={vault.error}
@@ -118,8 +122,6 @@ export function App() {
             onExport={vault.exportVariant}
             onReview={setReviewingId}
           />
-          <div className="section-title">Jobs</div>
-          <JobsPanel jobs={vault.jobs} />
         </aside>
       </div>
 

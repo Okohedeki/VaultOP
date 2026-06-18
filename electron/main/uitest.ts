@@ -85,11 +85,11 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     const assetId = ctx.repo.listAssets()[0]?.id
     checks.ingested = await pollUntil(() => ctx!.repo.getAsset(assetId!)?.status === 'ready', 60_000)
     await wait(700) // let the renderer receive the broadcast
-    checks.assetVisible = (await js<number>(`document.querySelectorAll('.asset').length`)) >= 1
+    checks.assetVisible = (await js<number>(`document.querySelectorAll('.clip').length`)) >= 1
     await shot('2-library')
 
     // ── 3. Open the asset → segment grid renders ────────────────────────────
-    await js(`document.querySelector('.asset--clickable')?.click(); true`)
+    await js(`document.querySelector('.clip--open')?.click(); true`)
     await wait(1000) // segment grid loads thumbnails via IPC
     checks.segmentGrid = (await js<number>(`document.querySelectorAll('.seg__tile').length`)) >= 1
     await shot('3-segments')

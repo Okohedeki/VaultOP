@@ -21,13 +21,14 @@ Grab an installer from the **[latest release](https://github.com/Okohedeki/Vault
 
 ### Verify the build yourself
 - `VaultOP --selftest` — runs the whole pipeline headless inside the packaged app, exits 0/1.
-- `npm run uitest` — launches the real window, ingests a clip, makes a teaser, and
-  screenshots each step (proof the GUI and every feature work, not just the core).
+- `npm run uitest` — launches the real window and drives the whole flow (ingest → tag a
+  Section → Build a Cut → captions → Make Promos → blur gate → approve → export),
+  screenshotting each step (proof the GUI and every feature work, not just the core).
 
-> Status: **the MVP wedge is functional and verified end-to-end** — ingest → tagged,
-> scene-split, searchable library → one-click teaser + cross-library compilation →
-> mandatory human-verified blur gate → export. See the build plan at
-> `~/.claude/plans/drop-comms-entirely-cosmic-spindle.md` and decisions in
+> Status: **functional and verified end-to-end** — ingest → tagged, scene-split, searchable
+> library → **built-in editor** (Tagger → Builder → Cut, with captions) → **Promos** per
+> platform → mandatory human-verified blur gate → export. See the editor decisions in
+> [CONTEXT.md](CONTEXT.md) + [docs/adr/](docs/adr/), and the original build plan in
 > [docs/research.md](docs/research.md).
 
 ## What it does today
@@ -40,12 +41,18 @@ Grab an installer from the **[latest release](https://github.com/Okohedeki/Vault
 3. **Search & tags** — a fully-native analyzer (ffmpeg color-histogram embeddings +
    brightness/tone/length tags, **zero model downloads**) makes the vault text-searchable
    and supports **visual "find similar"**.
-4. **Assembly** — one-click **30s vertical teaser** and **themed compilation** stitched
-   across the whole library, rendered with ffmpeg.
-5. **Blur gate** — teasers are platform-bound, so they enter a **mandatory, confidence-gated
+4. **Edit (built-in editor)** — the **Tagger** (real video player over a zoomable timeline)
+   where Scenes are pre-drawn as **Sections** you trim, split, ⭐-favorite and tag; then the
+   **Builder**, where you pool Sections (*this clip* or *whole library by tag*), order them,
+   set **per-clip speed**, optionally burn **auto-captions** from the transcript, and render a
+   **Cut**. One-click is demoted to a **⚡ Quick draft** that pre-fills the Builder.
+5. **Promos** — turn a Cut into platform-bound **Promos** (TikTok / Reels / IG / YouTube /
+   Reddit — reframed + length-capped per preset). A **Cut** is pure editing output with no
+   platform gate; a **Promo** is the platform-safe artifact.
+6. **Blur gate** — Promos are platform-bound, so they enter a **mandatory, confidence-gated
    human review**: draw blur masks over a frame, approve → re-blurs and unlocks export;
    **export is blocked until approved**. This is the one judgment-heavy step, kept human.
-6. **Hand-off** — export the finished cut for the creator to post.
+7. **Hand-off** — export the finished cut/promo for the creator to post.
 
 All processing runs through a durable SQLite job queue with cpu/gpu lanes and a live
 progress UI.
@@ -71,15 +78,18 @@ the **same encrypted vault** as the GUI. Full reference: [AGENTS.md](AGENTS.md).
 
 - **CLI** — `VaultOP --cli <command>`, JSON in/out (`bin/vaultop` wraps it):
   ```bash
-  vaultop ingest ./shoot.mov        # → encrypts, scene-splits, tags; waits until ready
-  vaultop search "bedroom short"    # → matching segments + tags
-  vaultop teaser <assetId>          # → 30s vertical teaser (enters the review gate)
+  vaultop ingest ./shoot.mov          # → encrypts, scene-splits, tags; waits until ready
+  vaultop sections <assetId>          # → the clip's Sections (seeded from Scenes)
+  vaultop section-tag <sectionId> reveal
+  vaultop cut <sectionId,sectionId> --aspect vertical --captions   # → render a Cut
+  vaultop promos <cutId> tiktok,feed  # → platform Promos (each enters the gate)
   vaultop export <variantId> out.mp4  # → blocked until reviewed + approved
   ```
-- **MCP server** — `mcp/server.mjs` exposes 15 tools for MCP clients (Claude Desktop /
+- **MCP server** — `mcp/server.mjs` exposes the full pipeline (including the editor:
+  `vaultop_sections` / `_cut` / `_promos`) as tools for MCP clients (Claude Desktop /
   Claude Code). See [mcp/README.md](mcp/README.md).
 
-The **blur-review gate is enforced for agents too**: a platform-bound teaser cannot be
+The **blur-review gate is enforced for agents too**: a platform-bound Promo cannot be
 exported until a human/agent explicitly approves it — there is no bypass.
 
 ## Architecture

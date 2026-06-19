@@ -32,6 +32,12 @@ Every command prints **one JSON object** to stdout and exits `0` (ok) or `1` (er
 | `segments <assetId>` | list an asset's scene segments |
 | `search <query...>` | text search across tags + transcripts |
 | `similar <segmentId>` | visual-similarity search |
+| `sections <assetId>` | list a clip's **Sections** (tagged ranges; seeded from Scenes) |
+| `section-new <assetId> <startMs> <endMs> [--label x]` | create a Section |
+| `section-tag <sectionId> <value>` / `section-untag <sectionId> <value>` | tag / untag a Section |
+| `by-tag <value> [--asset assetId]` | find Sections by tag (whole library or one clip) |
+| `cut <sectionId,...> [--aspect ...] [--captions] [--no-wait]` | render a **Cut** from Sections (no gate) |
+| `promos <cutVariantId> <tiktok,feed,reels,youtube,reddit> [--no-wait]` | Cut → platform **Promos** (**each enters the gate**) |
 | `teaser <assetId> [--no-wait]` | render a 30s vertical teaser (**enters the review gate**) |
 | `compile <id,id,...> [--aspect widescreen\|vertical\|square] [--no-wait]` | stitch a compilation |
 | `review <variantId>` | review state + current masks + whether a detector model is installed |
@@ -43,10 +49,11 @@ Every command prints **one JSON object** to stdout and exits `0` (ok) or `1` (er
 
 ### The safety gate is enforced for agents
 
-Teasers are platform-bound: `export` returns
-`{"ok":false,"error":"blocked: this teaser must be reviewed and approved before export"}`
+Promos (and teasers) are platform-bound: `export` returns
+`{"ok":false,"error":"blocked: this ... must be reviewed and approved before export"}`
 until a human/agent has explicitly `approve`d. An agent **cannot** auto-ship an unreviewed
-cut — approval is the deliberate, audited step. (With no detector model installed,
+cut — approval is the deliberate, audited step. (A plain **Cut** has no gate and exports
+freely; the gate attaches when it becomes a **Promo**.) (With no detector model installed,
 `review` reports `detectorAvailable:false`, meaning nothing is auto-cleared.)
 
 ### Example agent workflow
@@ -54,18 +61,21 @@ cut — approval is the deliberate, audited step. (With no detector model instal
 ```bash
 V=bin/vaultop
 $V ingest ./shoot.mov                       # → {"ok":true,"added":[{"assetId":"A",...,"status":"ready"}]}
-$V segments A                               # → segment ids + tags
-$V teaser A                                 # → {"ok":true,"variant":{"id":"V","reviewState":"pending",...}}
-$V review V                                 # inspect the frame regions a human must verify
-$V mask V 0.30,0.55,0.40,0.30               # mark a region to blur
-$V approve V                                # re-blur + approve
-$V export V ./out/teaser.mp4                # now allowed
+$V sections A                               # → Sections (S1, S2, …), seeded from Scenes
+$V section-tag S1 reveal                    # tag a Section
+$V cut S1,S2 --aspect vertical --captions   # → {"ok":true,"variant":{"id":"C","type":"cut",...}}  (no gate)
+$V promos C tiktok,feed                     # → two Promos {"id":"P","reviewState":"pending",...} (gated)
+$V review P                                 # inspect the frame regions a human must verify
+$V mask P 0.30,0.55,0.40,0.30               # mark a region to blur
+$V approve P                                # re-blur + approve
+$V export P ./out/tiktok.mp4                # now allowed
 ```
 
 ## MCP server
 
 `mcp/server.mjs` is a stdio MCP server that exposes the CLI commands as tools
-(`vaultop_status`, `vaultop_ingest`, `vaultop_search`, `vaultop_teaser`,
-`vaultop_review`, `vaultop_mask`, `vaultop_approve`, `vaultop_export`, …). It shells out
+(`vaultop_status`, `vaultop_ingest`, `vaultop_search`, `vaultop_sections`, `vaultop_cut`,
+`vaultop_promos`, `vaultop_review`, `vaultop_mask`, `vaultop_approve`, `vaultop_export`, …).
+It shells out
 to the VaultOP binary, so set `VAULTOP_BIN` to its path. See `mcp/README.md` for client
 registration (Claude Desktop / Claude Code).

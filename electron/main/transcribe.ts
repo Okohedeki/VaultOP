@@ -31,6 +31,14 @@ export interface Transcriber {
   transcribe(wavPath: string): Promise<TranscriptResult>
 }
 
+/** No-op transcriber for tests / VAULTOP_NO_ML — skips speech-to-text. */
+export class NullTranscriber implements Transcriber {
+  readonly id = 'null'
+  async transcribe(): Promise<TranscriptResult> {
+    return { text: '', chunks: [] }
+  }
+}
+
 /** whisper-tiny.en via transformers.js; model fetched + cached on first call. */
 export class WhisperTranscriber implements Transcriber {
   readonly id = 'whisper-tiny.en'

@@ -84,6 +84,7 @@ app.whenReady().then(async () => {
   }
 
   if (IS_UITEST) {
+    process.env.VAULTOP_NO_ML = '1' // walkthrough stays offline/fast
     const ok = await runUiTest(loadSchemaSql(), app.getPath('temp'))
     app.exit(ok ? 0 : 1)
     return

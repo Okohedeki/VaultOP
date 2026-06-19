@@ -14,7 +14,7 @@ import { makeSceneSplitHandler } from './segments'
 import { makeRenderHandler, RENDER_VERSION, CANVASES } from './assembly'
 import { NativeAnalyzer } from './analyzer'
 import { NoopDetector } from './detector'
-import { makeTranscribeHandler, WhisperTranscriber } from './transcribe'
+import { makeTranscribeHandler, NullTranscriber, WhisperTranscriber } from './transcribe'
 import { blurRegions, extractThumbnail, watermarkClip, type BlurRegion } from './ffmpeg'
 import { stableHash } from './hash'
 import { join } from 'node:path'
@@ -72,7 +72,9 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
   queue.register('transcode', makeTranscodeHandler({ repo, blobs, paths }))
   queue.register('scene_split', makeSceneSplitHandler({ repo, blobs, paths, analyzer }))
   queue.register('render', makeRenderHandler({ repo, blobs, paths }))
-  const transcriber = new WhisperTranscriber(join(paths.base, 'models', 'transformers'))
+  const transcriber = process.env.VAULTOP_NO_ML
+    ? new NullTranscriber()
+    : new WhisperTranscriber(join(paths.base, 'models', 'transformers'))
   queue.register('transcribe', makeTranscribeHandler({ repo, blobs, paths, transcriber }))
 
   function enqueueRender(variantId: string): void {

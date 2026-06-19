@@ -9,6 +9,7 @@ import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
+process.env.VAULTOP_NO_ML = '1' // keep the smoke offline + fast (ML verified separately)
 import { createVaultContext } from '../electron/main/context'
 import { FFMPEG_BIN, ffprobe } from '../electron/main/ffmpeg'
 

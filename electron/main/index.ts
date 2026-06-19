@@ -90,6 +90,28 @@ app.whenReady().then(async () => {
     return
   }
 
+  // Verify the bundled ML runtime (onnxruntime/transformers/sharp) actually loads
+  // + runs inside the packaged app. Throws (exit 1) if it can't — used pre-release.
+  if (process.argv.includes('--mltest')) {
+    try {
+      const { spawnSync } = await import('node:child_process')
+      const { FFMPEG_BIN } = await import('./ffmpeg')
+      const { ObjectDetector } = await import('./detector')
+      const frame = join(app.getPath('temp'), `vop-mltest-${Date.now()}.jpg`)
+      spawnSync(FFMPEG_BIN, ['-f', 'lavfi', '-i', 'testsrc=size=320x240:duration=1', '-frames:v', '1', '-y', frame])
+      const det = new ObjectDetector(join(app.getPath('temp'), 'vop-mltest-cache'))
+      const regions = await det.detectImage(frame)
+      // eslint-disable-next-line no-console
+      console.log(`✅ MLTEST PASS — onnxruntime + transformers ran in the packaged app (regions: ${regions.length})`)
+      app.exit(0)
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('❌ MLTEST FAIL:', e)
+      app.exit(1)
+    }
+    return
+  }
+
   try {
     const masterKey = loadOrCreateMasterKey(app.getPath('userData'))
     const baseDir = join(app.getPath('userData'), 'vault')

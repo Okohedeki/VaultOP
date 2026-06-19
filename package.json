@@ -1,6 +1,6 @@
 {
   "name": "vaultop",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "VaultOP — local-first media pipeline for content creators. The vault is the spine.",
   "private": true,
   "main": "out/main/index.js",
@@ -53,12 +53,17 @@
     "productName": "VaultOP",
     "files": [
       "out/**/*",
-      "db/**/*"
+      "db/**/*",
+      "!**/node_modules/onnxruntime-web/**"
     ],
     "asarUnpack": [
       "**/node_modules/better-sqlite3/**",
       "**/node_modules/ffmpeg-static/**",
-      "**/node_modules/ffprobe-static/**"
+      "**/node_modules/ffprobe-static/**",
+      "**/node_modules/@huggingface/transformers/**",
+      "**/node_modules/onnxruntime-node/**",
+      "**/node_modules/sharp/**",
+      "**/node_modules/@img/**"
     ],
     "mac": {
       "target": [

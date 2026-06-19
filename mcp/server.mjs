@@ -54,6 +54,11 @@ tool('vaultop_teaser', 'Render a 30s vertical teaser from an asset. Enters the m
 tool('vaultop_compile', 'Stitch a compilation from segment ids.',
   { segmentIds: z.array(z.string()).min(1), aspect: z.enum(['widescreen', 'vertical', 'square']).optional() },
   ({ segmentIds, aspect }) => ['compile', segmentIds.join(','), ...(aspect ? ['--aspect', aspect] : [])])
+tool('vaultop_fanout', 'One master → the full deliverable set (vertical+square teasers, preview GIF, paid cut).',
+  { assetId: z.string() }, ({ assetId }) => ['fanout', assetId])
+tool('vaultop_watermark', 'Export an approved cut with a per-fan forensic watermark (leak tracking).',
+  { variantId: z.string(), fanLabel: z.string(), dest: z.string() },
+  ({ variantId, fanLabel, dest }) => ['watermark', variantId, fanLabel, dest])
 tool('vaultop_review', 'Get a variant’s review state, masks, and whether a detector model is installed.',
   { variantId: z.string() }, ({ variantId }) => ['review', variantId])
 tool('vaultop_mask', 'Set blur masks (normalized 0..1 boxes "x,y,w,h") on a variant before approval.',

@@ -154,6 +154,26 @@ async function main(): Promise<void> {
     assert(cp.durationMs > 1000, 'compilation should stitch both clips')
     console.log(`· compilation rendered ${cp.width}x${cp.height}, ${cv.durationMs}ms across 2 sources`)
 
+    // 4f. Phase 5: variant fan-out — one master → the full set.
+    const fan = ctx.createFanout(assetId)
+    assert(fan.variantIds.length === 4, 'fan-out should create 4 cuts')
+    await ctx.queue.drain()
+    const fanCuts = fan.variantIds.map((id) => ctx.repo.getVariant(id)!)
+    assert(
+      fanCuts.every((v) => v.renderState === 'ready'),
+      `all fan-out cuts should render (${fanCuts.map((v) => v.renderState).join(',')})`,
+    )
+    const gif = fanCuts.find((v) => v.type === 'gif')!
+    assert(gif.requiresReview && gif.reviewState === 'pending', 'gif promo should be gated')
+    const paid = fanCuts.find((v) => v.type === 'paid')!
+    assert(!paid.requiresReview, 'paid cut should not need a safety check')
+    const wmOut = join(work, 'fan-007.mp4')
+    await ctx.exportWatermarked(paid.id, 'fan #007', wmOut)
+    assert((await ffprobe(wmOut)).width > 0, 'watermarked export should be playable')
+    console.log(
+      `· fan-out: ${fanCuts.length} cuts (vertical+square teasers, GIF, paid) + per-fan watermark export ✓`,
+    )
+
     // 5. Re-ingest the identical file → content-hash dedup, no new asset.
     const again = await ctx.ingest.addFiles([sample])
     assert(again.added.length === 0, 'duplicate ingest should add nothing')

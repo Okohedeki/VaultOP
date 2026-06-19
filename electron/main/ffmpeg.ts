@@ -169,12 +169,15 @@ export async function renderNormalizedClip(opts: {
   canvas: Canvas
   hasAudio: boolean
   output: string
+  colorNormalize?: boolean
 }): Promise<void> {
   const { master, startMs, endMs, canvas, hasAudio, output } = opts
   const dur = (endMs - startMs) / 1000
+  // Optional gentle color/levels "pop" so promo cuts look graded, not flat.
+  const grade = opts.colorNormalize ? ',eq=contrast=1.05:saturation=1.07:brightness=0.012' : ''
   const vf =
     `scale=${canvas.width}:${canvas.height}:force_original_aspect_ratio=increase,` +
-    `crop=${canvas.width}:${canvas.height},setsar=1,fps=${canvas.fps},format=yuv420p`
+    `crop=${canvas.width}:${canvas.height},setsar=1,fps=${canvas.fps}${grade},format=yuv420p`
 
   const args = ['-ss', (startMs / 1000).toFixed(3), '-t', dur.toFixed(3), '-i', master]
   if (!hasAudio) {
@@ -269,6 +272,57 @@ export async function blurRegions(
     last,
     '-map',
     '0:a?',
+    '-c:v',
+    'libx264',
+    '-preset',
+    'veryfast',
+    '-crf',
+    '20',
+    '-c:a',
+    'copy',
+    '-movflags',
+    '+faststart',
+    '-y',
+    output,
+  ])
+}
+
+/** Convert a rendered MP4 into a high-quality looping preview GIF. */
+export async function renderGif(
+  input: string,
+  output: string,
+  opts: { fps?: number; width?: number } = {},
+): Promise<void> {
+  const fps = opts.fps ?? 12
+  const width = opts.width ?? 480
+  const vf = `fps=${fps},scale=${width}:-1:flags=lanczos`
+  await run(FFMPEG_BIN, [
+    '-i',
+    input,
+    '-vf',
+    `${vf},split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
+    '-loop',
+    '0',
+    '-y',
+    output,
+  ])
+}
+
+/** Burn a per-fan forensic watermark (visible ID) into a clip — feeds leak tracking. */
+export async function watermarkClip(
+  input: string,
+  label: string,
+  output: string,
+): Promise<void> {
+  const text = label.replace(/[\\:']/g, '')
+  const draw =
+    `drawtext=text='${text}':fontcolor=white@0.10:fontsize=h/26:x=w-tw-20:y=h-th-20:` +
+    `shadowcolor=black@0.25:shadowx=1:shadowy=1`
+  await run(FFMPEG_BIN, [
+    '-i',
+    input,
+    '-vf',
+    draw,
     '-c:v',
     'libx264',
     '-preset',

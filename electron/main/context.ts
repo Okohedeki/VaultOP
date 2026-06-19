@@ -14,12 +14,12 @@ import { makeSceneSplitHandler } from './segments'
 import { makeRenderHandler, RENDER_VERSION, CANVASES } from './assembly'
 import { NativeAnalyzer } from './analyzer'
 import { NoopDetector } from './detector'
-import { blurRegions, extractThumbnail, type BlurRegion } from './ffmpeg'
+import { blurRegions, extractThumbnail, watermarkClip, type BlurRegion } from './ffmpeg'
 import { stableHash } from './hash'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { rm } from 'node:fs/promises'
-import type { Aspect, MaskRegion, ReviewInfo } from '@shared/domain'
+import type { Aspect, MaskRegion, ReviewInfo, VariantType } from '@shared/domain'
 
 export interface VaultContext {
   paths: VaultPaths
@@ -33,6 +33,10 @@ export interface VaultContext {
   createTeaser(assetId: string): { variantId: string }
   /** Stitch arbitrary segments (cross-library) into a compilation. */
   createCompilation(segmentIds: string[], aspect: Aspect): { variantId: string }
+  /** One master → the full deliverable set: vertical + square teasers, preview GIF, paid cut. */
+  createFanout(assetId: string): { variantIds: string[] }
+  /** Export an approved variant with a per-fan forensic watermark burned in. */
+  exportWatermarked(variantId: string, fanLabel: string, destPath: string): Promise<void>
   /** Decrypt a finished variant to a destination path for the creator to post. */
   exportVariant(variantId: string, destPath: string): Promise<void>
   /** Review-gate operations. */
@@ -121,6 +125,52 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
       })
       enqueueRender(variantId)
       return { variantId }
+    },
+    createFanout(assetId: string): { variantIds: string[] } {
+      const segmentIds = repo
+        .listSegmentsByAsset(assetId)
+        .filter((s) => s.hasThumbnail)
+        .map((s) => s.id)
+      if (segmentIds.length === 0) throw new Error('asset has no analyzed scenes yet')
+
+      // One source → every output it'll ever need.
+      const specs: Array<{
+        type: VariantType
+        aspect: Aspect
+        recipe: Record<string, unknown>
+        review: boolean
+      }> = [
+        { type: 'teaser', aspect: 'vertical', recipe: { kind: 'teaser', maxDurationMs: 30_000, colorNormalize: true }, review: true },
+        { type: 'teaser', aspect: 'square', recipe: { kind: 'teaser', maxDurationMs: 30_000, colorNormalize: true }, review: true },
+        { type: 'gif', aspect: 'vertical', recipe: { kind: 'gif', maxDurationMs: 6_000, format: 'gif' }, review: true },
+        { type: 'paid', aspect: 'widescreen', recipe: { kind: 'paid', colorNormalize: true }, review: false },
+      ]
+      const variantIds = specs.map((s) => {
+        const id = repo.createVariant({
+          type: s.type,
+          aspect: s.aspect,
+          recipeJson: JSON.stringify(s.recipe),
+          sourceSegmentIds: segmentIds,
+        })
+        if (s.review) repo.openReview(id, `platform_bound_${s.type}`)
+        enqueueRender(id)
+        return id
+      })
+      return { variantIds }
+    },
+    async exportWatermarked(variantId: string, fanLabel: string, destPath: string): Promise<void> {
+      const variant = repo.getVariant(variantId)
+      if (!variant?.storageUri) throw new Error('variant has no rendered output')
+      if (variant.requiresReview && variant.reviewState !== 'approved') {
+        throw new Error('blocked: approve this cut before exporting')
+      }
+      const inFile = join(paths.tmpDir, `${randomUUID()}.wm-src.mp4`)
+      try {
+        await blobs.getToFile(variant.storageUri.replace('blobs/', ''), inFile)
+        await watermarkClip(inFile, fanLabel, destPath)
+      } finally {
+        await rm(inFile, { force: true })
+      }
     },
     async exportVariant(variantId: string, destPath: string): Promise<void> {
       const variant = repo.getVariant(variantId)

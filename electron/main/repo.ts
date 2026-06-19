@@ -466,6 +466,17 @@ export class Repo {
       .run(storageUri, durationMs, this.now(), id)
   }
 
+  getVariantRecipe(id: string): Record<string, unknown> {
+    const r = this.db.prepare('SELECT recipe_json FROM variant WHERE id = ?').get(id) as
+      | { recipe_json: string }
+      | undefined
+    try {
+      return r ? (JSON.parse(r.recipe_json) as Record<string, unknown>) : {}
+    } catch {
+      return {}
+    }
+  }
+
   getVariant(id: string): Variant | null {
     const r = this.db.prepare('SELECT * FROM variant WHERE id = ?').get(id) as
       | Record<string, unknown>

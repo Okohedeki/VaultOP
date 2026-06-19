@@ -15,7 +15,15 @@ import type { VaultPaths } from './paths'
 import type { Repo } from './repo'
 import type { JobContext, JobHandler } from './queue'
 import type { Aspect } from '@shared/domain'
-import { concatClips, probeHasAudio, renderGif, renderNormalizedClip, type Canvas } from './ffmpeg'
+import {
+  concatClips,
+  extractThumbnail,
+  probeHasAudio,
+  renderGif,
+  renderNormalizedClip,
+  type Canvas,
+} from './ffmpeg'
+import type { Detector } from './detector'
 import { log } from './log'
 
 export const RENDER_VERSION = 'render-v1'
@@ -55,8 +63,9 @@ export function makeRenderHandler(deps: {
   repo: Repo
   blobs: BlobStore
   paths: VaultPaths
+  detector: Detector
 }): JobHandler {
-  const { repo, blobs, paths } = deps
+  const { repo, blobs, paths, detector } = deps
 
   return async function render({ job, setProgress }: JobContext): Promise<void> {
     const variantId = job.targetId
@@ -134,6 +143,27 @@ export function makeRenderHandler(deps: {
 
       const blob = await blobs.putFile(finalFile)
       repo.setVariantResult(variantId, blob.uri, totalMs)
+
+      // Platform-bound cut → auto-suggest blur masks (people/faces) for the human
+      // to verify and refine. Best-effort; the gate is mandatory regardless.
+      if (variant.requiresReview && detector.available) {
+        try {
+          const frame = join(paths.tmpDir, `${randomUUID()}.detect.jpg`)
+          await extractThumbnail(outFile, Math.max(100, Math.floor(totalMs / 2)), frame)
+          const regions = await detector.detectImage(frame)
+          await rm(frame, { force: true })
+          if (regions.length) {
+            repo.setReviewMasks(
+              variantId,
+              regions.map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h, cls: r.cls })),
+            )
+            log.info('render.prefilled_masks', { variantId, regions: regions.length })
+          }
+        } catch (e) {
+          log.warn('render.detect_skipped', { variantId, error: String(e) })
+        }
+      }
+
       setProgress(1)
       log.info('render.ready', { variantId, clips: clipPaths.length, durationMs: totalMs, asGif })
     } catch (e) {

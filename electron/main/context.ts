@@ -13,7 +13,7 @@ import { makeTranscodeHandler } from './transcode'
 import { makeSceneSplitHandler } from './segments'
 import { makeRenderHandler, RENDER_VERSION, CANVASES } from './assembly'
 import { NativeAnalyzer } from './analyzer'
-import { NoopDetector } from './detector'
+import { NoopDetector, ObjectDetector } from './detector'
 import { makeTranscribeHandler, NullTranscriber, WhisperTranscriber } from './transcribe'
 import { makeTagHandler, NullTagger, ClipTagger } from './tagger'
 import { blurRegions, extractThumbnail, watermarkClip, type BlurRegion } from './ffmpeg'
@@ -68,12 +68,12 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
   const blobs = new BlobStore(crypto, paths)
   const queue = new Queue(repo, { onChanged: opts.onChanged })
 
+  const tfCache = join(paths.base, 'models', 'transformers')
   const analyzer = new NativeAnalyzer()
-  const detector = new NoopDetector()
+  const detector = process.env.VAULTOP_NO_ML ? new NoopDetector() : new ObjectDetector(tfCache)
   queue.register('transcode', makeTranscodeHandler({ repo, blobs, paths }))
   queue.register('scene_split', makeSceneSplitHandler({ repo, blobs, paths, analyzer }))
-  queue.register('render', makeRenderHandler({ repo, blobs, paths }))
-  const tfCache = join(paths.base, 'models', 'transformers')
+  queue.register('render', makeRenderHandler({ repo, blobs, paths, detector }))
   const transcriber = process.env.VAULTOP_NO_ML
     ? new NullTranscriber()
     : new WhisperTranscriber(tfCache)

@@ -33,7 +33,7 @@ const reply = (result) => ({
   isError: result && result.ok === false,
 })
 
-const server = new McpServer({ name: 'vaultop', version: '0.1.3' })
+const server = new McpServer({ name: 'vaultop', version: '0.2.1' })
 
 const tool = (name, description, shape, toArgs) =>
   server.registerTool(name, { description, inputSchema: shape }, async (args) => reply(cli(toArgs(args || {}))))
@@ -49,6 +49,26 @@ tool('vaultop_search', 'Text search across tags and transcripts.',
   { query: z.string() }, ({ query }) => ['search', query])
 tool('vaultop_similar', 'Find visually similar segments to a given segment.',
   { segmentId: z.string() }, ({ segmentId }) => ['similar', segmentId])
+tool('vaultop_sections', "List a clip's Sections (creator-defined tagged ranges; seeded from Scenes on first call).",
+  { assetId: z.string() }, ({ assetId }) => ['sections', assetId])
+tool('vaultop_section_new', 'Create a Section (a tagged time range) on a clip.',
+  { assetId: z.string(), startMs: z.number().int(), endMs: z.number().int(), label: z.string().optional() },
+  ({ assetId, startMs, endMs, label }) =>
+    ['section-new', assetId, String(startMs), String(endMs), ...(label ? ['--label', label] : [])])
+tool('vaultop_section_tag', 'Add a tag to a Section.',
+  { sectionId: z.string(), value: z.string() }, ({ sectionId, value }) => ['section-tag', sectionId, value])
+tool('vaultop_section_untag', 'Remove a tag from a Section.',
+  { sectionId: z.string(), value: z.string() }, ({ sectionId, value }) => ['section-untag', sectionId, value])
+tool('vaultop_sections_by_tag', 'Find Sections by tag — across the whole library, or scoped to one clip.',
+  { value: z.string(), assetId: z.string().optional() },
+  ({ value, assetId }) => ['by-tag', value, ...(assetId ? ['--asset', assetId] : [])])
+tool('vaultop_cut', 'Render a Cut from an ordered list of Section ids (the Builder, headless). A Cut has no platform gate.',
+  { sectionIds: z.array(z.string()).min(1), aspect: z.enum(['vertical', 'square', 'widescreen']).optional(), captions: z.boolean().optional() },
+  ({ sectionIds, aspect, captions }) =>
+    ['cut', sectionIds.join(','), ...(aspect ? ['--aspect', aspect] : []), ...(captions ? ['--captions'] : [])])
+tool('vaultop_promos', 'Turn a Cut into platform-bound Promos (reframed + length-capped). Each enters the mandatory blur gate.',
+  { cutVariantId: z.string(), platforms: z.array(z.enum(['tiktok', 'reels', 'feed', 'youtube', 'reddit'])).min(1) },
+  ({ cutVariantId, platforms }) => ['promos', cutVariantId, platforms.join(',')])
 tool('vaultop_teaser', 'Render a 30s vertical teaser from an asset. Enters the mandatory review gate.',
   { assetId: z.string() }, ({ assetId }) => ['teaser', assetId])
 tool('vaultop_compile', 'Stitch a compilation from segment ids.',

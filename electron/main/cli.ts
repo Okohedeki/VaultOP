@@ -60,6 +60,15 @@ const HELP = {
     'segments <assetId>': 'list an asset’s segments',
     'search <query...>': 'text search across tags + transcripts',
     'similar <segmentId>': 'visual-similarity search',
+    'sections <assetId>': 'list a clip’s Sections (seeded from Scenes on first call)',
+    'section-new <assetId> <startMs> <endMs> [--label x]': 'create a Section on the clip',
+    'section-tag <sectionId> <value>': 'add a tag to a Section',
+    'section-untag <sectionId> <value>': 'remove a tag from a Section',
+    'by-tag <value> [--asset assetId]': 'find Sections by tag (whole library, or one clip)',
+    'cut <sectionId,sectionId,...> [--aspect vertical|square|widescreen] [--captions] [--no-wait]':
+      'render a Cut from Sections (the Builder, headless)',
+    'promos <cutVariantId> <tiktok,feed,reels,youtube,reddit> [--no-wait]':
+      'turn a Cut into platform-bound Promos (each enters the blur gate)',
     'teaser <assetId> [--no-wait]': 'render a 30s vertical teaser (enters review gate)',
     'compile <segId,segId,...> [--aspect widescreen|vertical|square] [--no-wait]': 'stitch a compilation',
     'fanout <assetId> [--no-wait]': 'one master → the full set (vertical+square teasers, GIF, paid)',
@@ -142,6 +151,95 @@ export async function runCli(
         const [segmentId] = positionals
         if (!segmentId) throw new Error('similar needs a segmentId')
         out({ ok: true, hits: c.repo.similarSegments(segmentId) })
+        return 0
+      }
+      case 'sections': {
+        const [assetId] = positionals
+        if (!assetId) throw new Error('sections needs an assetId')
+        const master = c.repo.getMasterByAsset(assetId)
+        if (!master) throw new Error('asset has no master yet (still processing?)')
+        c.repo.ensureSectionsForMaster(master.id)
+        out({ ok: true, masterId: master.id, sections: c.repo.listSectionsByMaster(master.id) })
+        return 0
+      }
+      case 'section-new': {
+        const [assetId, startMs, endMs] = positionals
+        if (!assetId || startMs === undefined || endMs === undefined) {
+          throw new Error('section-new needs <assetId> <startMs> <endMs>')
+        }
+        const master = c.repo.getMasterByAsset(assetId)
+        if (!master) throw new Error('asset has no master yet')
+        const s = c.repo.createSection({
+          masterId: master.id,
+          startMs: Number(startMs),
+          endMs: Number(endMs),
+          label: typeof flags.label === 'string' ? flags.label : null,
+        })
+        out({ ok: true, section: s })
+        return 0
+      }
+      case 'section-tag': {
+        const [sectionId, value] = positionals
+        if (!sectionId || !value) throw new Error('section-tag needs <sectionId> <value>')
+        c.repo.addSectionTag(sectionId, value)
+        out({ ok: true, section: c.repo.getSection(sectionId) })
+        return 0
+      }
+      case 'section-untag': {
+        const [sectionId, value] = positionals
+        if (!sectionId || !value) throw new Error('section-untag needs <sectionId> <value>')
+        c.repo.removeSectionTag(sectionId, value)
+        out({ ok: true, section: c.repo.getSection(sectionId) })
+        return 0
+      }
+      case 'by-tag': {
+        const [value] = positionals
+        if (!value) throw new Error('by-tag needs a tag value')
+        let masterId: string | null = null
+        if (typeof flags.asset === 'string') {
+          const m = c.repo.getMasterByAsset(flags.asset)
+          if (!m) throw new Error('asset has no master yet')
+          masterId = m.id
+        }
+        out({ ok: true, sections: c.repo.sectionsByTag(value, masterId) })
+        return 0
+      }
+      case 'cut': {
+        const ids = (positionals[0] ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+        if (ids.length === 0) throw new Error('cut needs comma-separated section ids')
+        const clips = ids.map((id) => {
+          const s = c.repo.getSection(id)
+          if (!s) throw new Error(`section ${id} not found`)
+          return {
+            sectionId: s.id,
+            masterId: s.masterId,
+            startMs: s.startMs,
+            endMs: s.endMs,
+            speed: 1,
+            label: s.label,
+          }
+        })
+        const aspect = (flags.aspect as Aspect) || 'vertical'
+        const { variantId } = c.createCut({ aspect, captions: flags.captions === true, clips })
+        if (wantWait) {
+          await pollUntil(() => c.repo.getVariant(variantId), (v) => v.renderState === 'ready' || v.renderState === 'failed', 600_000)
+        }
+        out({ ok: true, variant: c.repo.getVariant(variantId) })
+        return 0
+      }
+      case 'promos': {
+        const [cutVariantId, platformList] = positionals
+        if (!cutVariantId || !platformList) {
+          throw new Error('promos needs <cutVariantId> <comma,platforms>')
+        }
+        const platforms = platformList.split(',').map((s) => s.trim()).filter(Boolean)
+        const { variantIds } = c.makePromos(cutVariantId, platforms)
+        if (wantWait) {
+          for (const id of variantIds) {
+            await pollUntil(() => c.repo.getVariant(id), (v) => v.renderState === 'ready' || v.renderState === 'failed', 600_000)
+          }
+        }
+        out({ ok: true, variants: variantIds.map((id) => c.repo.getVariant(id)) })
         return 0
       }
       case 'teaser': {

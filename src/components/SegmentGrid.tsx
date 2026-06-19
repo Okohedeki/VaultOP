@@ -8,6 +8,7 @@ interface Props {
   asset: Asset
   revision: number
   onBack: () => void
+  onEdit: (assetId: string) => void
   onFindSimilar: (segmentId: string) => void
   onMakeTeaser: (assetId: string) => void
   onMakeFanout: (assetId: string) => void
@@ -17,6 +18,7 @@ export function SegmentGrid({
   asset,
   revision,
   onBack,
+  onEdit,
   onFindSimilar,
   onMakeTeaser,
   onMakeFanout,
@@ -42,10 +44,11 @@ export function SegmentGrid({
         </div>
         {segments.length > 0 && (
           <div className="seg__actions">
-            <Button onClick={() => onMakeTeaser(asset.id)}>✦ 30s teaser</Button>
-            <Button variant="primary" onClick={() => onMakeFanout(asset.id)}>
-              ✨ Make all promos
+            <Button variant="primary" onClick={() => onEdit(asset.id)}>
+              ✂️ Edit &amp; tag
             </Button>
+            <Button onClick={() => onMakeTeaser(asset.id)}>✦ 30s teaser</Button>
+            <Button onClick={() => onMakeFanout(asset.id)}>✨ All promos</Button>
           </div>
         )}
       </div>

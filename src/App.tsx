@@ -7,6 +7,7 @@ import { SegmentGrid } from './components/SegmentGrid'
 import { SearchResults } from './components/SearchResults'
 import { DeliverablesPanel } from './components/DeliverablesPanel'
 import { ReviewModal } from './components/ReviewModal'
+import { Tagger } from './editor/Tagger'
 import { Badge } from './design/primitives'
 import type { SearchMode } from './state/useSearch'
 import type { Aspect } from '@shared/domain'
@@ -14,10 +15,12 @@ import type { Aspect } from '@shared/domain'
 export function App() {
   const vault = useVault()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [similarTo, setSimilarTo] = useState<string | null>(null)
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const selected = selectedId ? (vault.assets.find((a) => a.id === selectedId) ?? null) : null
+  const editing = editingId ? (vault.assets.find((a) => a.id === editingId) ?? null) : null
   const activeCount = vault.jobs.filter((j) => j.state === 'queued' || j.state === 'running').length
 
   const searchMode: SearchMode | null = similarTo
@@ -56,6 +59,11 @@ export function App() {
         )}
       </header>
 
+      {editing ? (
+        <div className="app__body app__body--editor">
+          <Tagger asset={editing} onBack={() => setEditingId(null)} />
+        </div>
+      ) : (
       <div className="app__body">
         <main className="app__main">
           {selected ? (
@@ -63,6 +71,7 @@ export function App() {
               asset={selected}
               revision={selected.updatedAt}
               onBack={() => setSelectedId(null)}
+              onEdit={(id) => setEditingId(id)}
               onFindSimilar={findSimilar}
               onMakeTeaser={(id) => void vault.makeTeaser(id)}
               onMakeFanout={(id) => void vault.makeFanout(id)}
@@ -125,6 +134,7 @@ export function App() {
           />
         </aside>
       </div>
+      )}
 
       {reviewingId && (
         <ReviewModal

@@ -4,8 +4,10 @@
 // place that touches Electron app/window APIs.
 
 import { join } from 'node:path'
-import { readFileSync } from 'node:fs'
-import { app, BrowserWindow } from 'electron'
+import { readFileSync, createReadStream } from 'node:fs'
+import { stat } from 'node:fs/promises'
+import { Readable } from 'node:stream'
+import { app, BrowserWindow, protocol } from 'electron'
 import { createVaultContext, type VaultContext } from './context'
 import { loadOrCreateMasterKey } from './masterkey'
 import { broadcastState, registerIpc } from './ipc'
@@ -23,6 +25,48 @@ let mainWindow: BrowserWindow | null = null
 let ctx: VaultContext | null = null
 
 const getWindow = (): BrowserWindow | null => mainWindow
+
+// The editor streams decrypted Masters over a private scheme. Privileged so it can
+// be a <video> source under our CSP and honour Range requests (seeking). Must be
+// declared before the app is ready.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'vaultmedia',
+    privileges: { secure: true, stream: true, supportFetchAPI: true, bypassCSP: true, corsEnabled: true },
+  },
+])
+
+/** Serve a decrypted Master with HTTP Range support so the editor's <video> can seek. */
+function registerMediaProtocol(c: VaultContext): void {
+  protocol.handle('vaultmedia', async (request) => {
+    try {
+      const masterId = new URL(request.url).hostname
+      const file = await c.materializeMaster(masterId)
+      if (!file) return new Response('not found', { status: 404 })
+      const { size } = await stat(file)
+      const range = request.headers.get('Range')
+      const headersBase = { 'Content-Type': 'video/mp4', 'Accept-Ranges': 'bytes' }
+      if (range) {
+        const m = /bytes=(\d*)-(\d*)/.exec(range)
+        const start = m && m[1] ? parseInt(m[1], 10) : 0
+        const end = m && m[2] ? parseInt(m[2], 10) : size - 1
+        const body = Readable.toWeb(createReadStream(file, { start, end })) as ReadableStream
+        return new Response(body, {
+          status: 206,
+          headers: {
+            ...headersBase,
+            'Content-Length': String(end - start + 1),
+            'Content-Range': `bytes ${start}-${end}/${size}`,
+          },
+        })
+      }
+      const body = Readable.toWeb(createReadStream(file)) as ReadableStream
+      return new Response(body, { status: 200, headers: { ...headersBase, 'Content-Length': String(size) } })
+    } catch (e) {
+      return new Response(errorMessage(e), { status: 500 })
+    }
+  })
+}
 
 function loadSchemaSql(): string {
   // db/** is bundled inside app.asar (build.files). Electron's fs reads from the
@@ -122,6 +166,7 @@ app.whenReady().then(async () => {
       onChanged: () => broadcastState(getWindow, ctx!),
     })
     registerIpc(ctx, getWindow)
+    registerMediaProtocol(ctx)
     createWindow()
     // Push initial state once the renderer is up.
     app.on('browser-window-created', () => setTimeout(() => broadcastState(getWindow, ctx!), 300))

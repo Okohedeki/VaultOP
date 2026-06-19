@@ -59,6 +59,11 @@
     grid-template-columns: 1fr;
   }
 }
+/* The editor takes the whole body — single column, no side panel. */
+.app__body--editor {
+  display: block;
+  grid-template-columns: none;
+}
 
 .app__main,
 .app__side {

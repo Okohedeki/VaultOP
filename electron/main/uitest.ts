@@ -94,6 +94,32 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     checks.segmentGrid = (await js<number>(`document.querySelectorAll('.seg__tile').length`)) >= 1
     await shot('3-segments')
 
+    // ── 3b. Open the editor → Tagger renders, Sections seeded from Scenes ─────
+    await js(
+      `[...document.querySelectorAll('.seg__actions button')].find(b=>/edit/i.test(b.textContent))?.click(); true`,
+    )
+    await wait(1200)
+    checks.editorOpen = await js<boolean>(`!!document.querySelector('.ed')`)
+    checks.timelineSeeded = (await js<number>(`document.querySelectorAll('.tl__block').length`)) >= 1
+    checks.playerPresent = await js<boolean>(`!!document.querySelector('.ed__video')`)
+    await shot('3b-editor')
+
+    // Tag a Section through the real IPC path, then read it back by tag.
+    checks.sectionTagged = await js<boolean>(
+      `(async()=>{` +
+        `const m=(await window.vaultop.invoke('master:getByAsset',{assetId:${JSON.stringify(assetId)}})).master;` +
+        `const secs=(await window.vaultop.invoke('sections:listByMaster',{masterId:m.id})).sections;` +
+        `await window.vaultop.invoke('sections:tag',{sectionId:secs[0].id,value:'reveal'});` +
+        `const hits=(await window.vaultop.invoke('sections:byTag',{value:'reveal',masterId:m.id})).sections;` +
+        `return hits.length===1 && hits[0].tags.some(t=>t.value==='reveal');` +
+        `})()`,
+    )
+    // Back to the segment grid.
+    await js(
+      `[...document.querySelectorAll('.ed__head button')].find(b=>/vault/i.test(b.textContent))?.click(); true`,
+    )
+    await wait(600)
+
     // ── 4. Make a teaser → deliverable appears, gated for review ─────────────
     await js(
       `[...document.querySelectorAll('.seg__head button')].find(b=>/teaser/i.test(b.textContent))?.click(); true`,

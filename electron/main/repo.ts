@@ -202,11 +202,21 @@ export class Repo {
     return { id, createdAt: t, ...m }
   }
 
+  getMaster(id: string): Master | null {
+    const r = this.db.prepare('SELECT * FROM master WHERE id = ?').get(id) as
+      | Record<string, unknown>
+      | undefined
+    return r ? this.mapMaster(r) : null
+  }
+
   getMasterByAsset(assetId: string): Master | null {
     const r = this.db.prepare('SELECT * FROM master WHERE asset_id = ?').get(assetId) as
       | Record<string, unknown>
       | undefined
-    if (!r) return null
+    return r ? this.mapMaster(r) : null
+  }
+
+  private mapMaster(r: Record<string, unknown>): Master {
     return {
       id: r.id as string,
       assetId: r.asset_id as string,

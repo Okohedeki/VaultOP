@@ -31,6 +31,9 @@ export interface VaultContext {
   ingest: Ingest
   /** Decrypt a segment's thumbnail and return it as a data URL (null if none). */
   readThumbnailDataUrl(segmentId: string): Promise<string | null>
+  /** Decrypt a Master to a stable plaintext temp file (cached) so the editor's
+   *  <video> player can stream it via the vaultmedia:// protocol. Null if unknown. */
+  materializeMaster(masterId: string): Promise<string | null>
   /** Build a vertical teaser from an asset's segments (capped to 30s by the engine). */
   createTeaser(assetId: string): { variantId: string }
   /** Stitch arbitrary segments (cross-library) into a compilation. */
@@ -93,6 +96,11 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
 
   const ingest = new Ingest(repo, blobs, queue)
 
+  // masterId → decrypted plaintext mp4 path. The editor streams the Master through
+  // the vaultmedia:// protocol; we decrypt once and reuse the temp file. Cleared on close.
+  const materialized = new Map<string, string>()
+  const materializing = new Map<string, Promise<string | null>>()
+
   if (opts.autostart !== false) queue.start()
 
   return {
@@ -106,6 +114,30 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
       if (!uri) return null
       const buf = await blobs.getBuffer(uri.replace('blobs/', ''))
       return `data:image/jpeg;base64,${buf.toString('base64')}`
+    },
+    async materializeMaster(masterId: string): Promise<string | null> {
+      const cached = materialized.get(masterId)
+      if (cached) {
+        const { existsSync } = await import('node:fs')
+        if (existsSync(cached)) return cached
+        materialized.delete(masterId)
+      }
+      const inflight = materializing.get(masterId)
+      if (inflight) return inflight
+      const job = (async (): Promise<string | null> => {
+        const master = repo.getMaster(masterId)
+        if (!master?.storageUri) return null
+        const dest = join(paths.tmpDir, `master-${masterId}.mp4`)
+        await blobs.getToFile(master.storageUri.replace('blobs/', ''), dest)
+        materialized.set(masterId, dest)
+        return dest
+      })()
+      materializing.set(masterId, job)
+      try {
+        return await job
+      } finally {
+        materializing.delete(masterId)
+      }
     },
     createTeaser(assetId: string): { variantId: string } {
       const segmentIds = repo
@@ -256,6 +288,8 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
     },
     close() {
       queue.stop()
+      for (const p of materialized.values()) void rm(p, { force: true })
+      materialized.clear()
       db.close()
     },
   }

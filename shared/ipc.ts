@@ -8,6 +8,7 @@ import {
   Asset,
   Job,
   MaskRegion,
+  Master,
   ReviewInfo,
   SearchHit,
   Section,
@@ -39,6 +40,14 @@ export const ipcContract = {
   'segments:listByAsset': {
     request: z.object({ assetId: z.string() }),
     response: z.object({ segments: z.array(Segment) }),
+  },
+  'master:getByAsset': {
+    request: z.object({ assetId: z.string() }),
+    response: z.object({ master: Master.nullable() }),
+  },
+  'media:masterUrl': {
+    request: z.object({ masterId: z.string() }),
+    response: z.object({ url: z.string().nullable() }),
   },
   'sections:listByMaster': {
     request: z.object({ masterId: z.string() }),

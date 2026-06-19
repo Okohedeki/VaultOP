@@ -51,6 +51,15 @@ export function registerIpc(ctx: VaultContext, getWindow: () => BrowserWindow | 
     segments: ctx.repo.listSegmentsByAsset(req.assetId),
   }))
 
+  handle('master:getByAsset', async (req) => ({
+    master: ctx.repo.getMasterByAsset(req.assetId),
+  }))
+
+  handle('media:masterUrl', async (req) => {
+    const path = await ctx.materializeMaster(req.masterId) // decrypt now so seeking is instant
+    return { url: path ? `vaultmedia://${req.masterId}` : null }
+  })
+
   handle('sections:listByMaster', async (req) => {
     ctx.repo.ensureSectionsForMaster(req.masterId) // seed from Scenes on first open
     return { sections: ctx.repo.listSectionsByMaster(req.masterId) }

@@ -123,6 +123,8 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     await js(`document.querySelector('.bld__pool-list .bld__add')?.click(); true`)
     await wait(300)
     checks.cutClipAdded = (await js<number>(`document.querySelectorAll('.bld__clip').length`)) >= 1
+    await js(`document.querySelector('.bld__cc')?.click(); true`) // captions on (empty w/o ML → no-op burn)
+    checks.captionToggle = await js<boolean>(`!!document.querySelector('.bld__cc.is-on')`)
     await shot('3c-builder')
     await js(
       `[...document.querySelectorAll('.ed__head-actions button')].find(b=>/render cut/i.test(b.textContent))?.click(); true`,

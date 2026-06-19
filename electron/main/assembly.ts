@@ -16,6 +16,7 @@ import type { Repo } from './repo'
 import type { JobContext, JobHandler } from './queue'
 import type { Aspect } from '@shared/domain'
 import {
+  burnCaptions,
   concatClips,
   extractThumbnail,
   probeHasAudio,
@@ -23,6 +24,7 @@ import {
   renderNormalizedClip,
   type Canvas,
 } from './ffmpeg'
+import { buildSrtFromEdl, type CaptionClip } from './captions'
 import type { Detector } from './detector'
 import { log } from './log'
 
@@ -112,6 +114,8 @@ export function makeRenderHandler(deps: {
     const listFile = join(paths.tmpDir, `${randomUUID()}.concat.txt`)
     const outFile = join(paths.tmpDir, `${randomUUID()}.out.mp4`)
     let gifFile: string | null = null
+    let srtFile: string | null = null
+    let captionedFile: string | null = null
 
     try {
       // Decrypt each unique master once.
@@ -145,16 +149,44 @@ export function makeRenderHandler(deps: {
         setProgress(0.15 + ((i + 1) / items.length) * 0.65)
       }
 
-      // Concat (lossless), optionally convert to GIF, then encrypt into the vault.
+      // Concat (lossless), optionally burn captions, optionally GIF, then encrypt.
       await writeFile(listFile, clipPaths.map((c) => `file '${c}'`).join('\n'), 'utf8')
       await concatClips(listFile, outFile)
-      setProgress(0.88)
+      setProgress(0.85)
 
       let finalFile = outFile
+
+      // Auto-captions (E3): map each EDL clip's transcript onto the output timeline.
+      if (recipe.kind === 'edl' && (recipe.edl as { captions?: boolean })?.captions === true) {
+        const edlClips = ((recipe.edl as { clips?: CaptionClip[] }).clips ?? []).map((c) => ({
+          masterId: c.masterId,
+          startMs: c.startMs,
+          endMs: c.endMs,
+          speed: c.speed > 0 ? c.speed : 1,
+        }))
+        const byMaster = new Map<string, ReturnType<Repo['getTranscriptChunks']>>()
+        for (const mid of new Set(edlClips.map((c) => c.masterId))) {
+          byMaster.set(mid, repo.getTranscriptChunks(mid))
+        }
+        const srt = buildSrtFromEdl(edlClips, byMaster)
+        if (srt.trim()) {
+          srtFile = join(paths.tmpDir, `${randomUUID()}.srt`)
+          captionedFile = join(paths.tmpDir, `${randomUUID()}.cap.mp4`)
+          await writeFile(srtFile, srt, 'utf8')
+          await burnCaptions(finalFile, srtFile, captionedFile)
+          finalFile = captionedFile
+          log.info('render.captioned', { variantId })
+        } else {
+          log.info('render.captions_empty', { variantId })
+        }
+      }
+      setProgress(0.9)
+
       if (asGif) {
-        finalFile = join(paths.tmpDir, `${randomUUID()}.gif`)
-        await renderGif(outFile, finalFile)
-        gifFile = finalFile
+        const gif = join(paths.tmpDir, `${randomUUID()}.gif`)
+        await renderGif(finalFile, gif)
+        finalFile = gif
+        gifFile = gif
       }
       setProgress(0.94)
 
@@ -193,6 +225,8 @@ export function makeRenderHandler(deps: {
         rm(listFile, { force: true }),
         rm(outFile, { force: true }),
         gifFile ? rm(gifFile, { force: true }) : Promise.resolve(),
+        srtFile ? rm(srtFile, { force: true }) : Promise.resolve(),
+        captionedFile ? rm(captionedFile, { force: true }) : Promise.resolve(),
       ])
     }
   }

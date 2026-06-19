@@ -126,6 +126,10 @@ export function makeTranscribeHandler(deps: {
       const result = await transcriber.transcribe(wav)
       setProgress(0.9)
 
+      // Keep the verbatim timestamped chunks for caption mapping (E3)…
+      repo.setTranscriptChunks(master.id, result.chunks)
+
+      // …and the merged per-scene text for search.
       const segs = repo.listSegmentsByAsset(assetId)
       for (const s of segs) {
         const text = result.chunks

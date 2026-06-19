@@ -178,6 +178,8 @@ export type EdlClip = z.infer<typeof EdlClip>
 export const Edl = z.object({
   aspect: Aspect,
   clips: z.array(EdlClip).min(1),
+  /** Burn auto-captions from the source transcript onto the rendered Cut. */
+  captions: z.boolean().optional().default(false),
 })
 export type Edl = z.infer<typeof Edl>
 

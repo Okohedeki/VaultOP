@@ -663,3 +663,41 @@ kbd {
 .bld__clip-x:hover {
   color: var(--danger);
 }
+
+.bld__opts {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-2);
+}
+.bld__cc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 8px 14px;
+  cursor: pointer;
+  color: var(--fg-muted);
+}
+.bld__cc strong {
+  font-size: var(--fs-md);
+  color: var(--fg);
+  letter-spacing: 0.04em;
+}
+.bld__cc em {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+}
+.bld__cc.is-on {
+  border-color: var(--accent);
+  background: var(--grad-soft);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.bld__cc.is-on em {
+  color: var(--accent);
+}

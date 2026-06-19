@@ -44,6 +44,7 @@ export function Builder({ asset, onBack, onRendered }: Props) {
   const [poolBusy, setPoolBusy] = useState(false)
   const [clips, setClips] = useState<Clip[]>([])
   const [aspect, setAspect] = useState<Aspect>('vertical')
+  const [captions, setCaptions] = useState(false)
   const [rendering, setRendering] = useState(false)
 
   const master = sx.master
@@ -112,6 +113,7 @@ export function Builder({ asset, onBack, onRendered }: Props) {
       await getBridge().invoke('cut:create', {
         edl: {
           aspect,
+          captions,
           clips: clips.map((c) => ({
             sectionId: c.sectionId,
             masterId: c.masterId,
@@ -126,7 +128,7 @@ export function Builder({ asset, onBack, onRendered }: Props) {
     } finally {
       setRendering(false)
     }
-  }, [clips, aspect, onRendered])
+  }, [clips, aspect, captions, onRendered])
 
   if (sx.loadState === 'loading') {
     return (
@@ -221,17 +223,27 @@ export function Builder({ asset, onBack, onRendered }: Props) {
 
         {/* The cut */}
         <section className="bld__cut">
-          <div className="bld__aspect">
-            {ASPECTS.map((a) => (
-              <button
-                key={a.key}
-                className={aspect === a.key ? 'is-on' : ''}
-                onClick={() => setAspect(a.key)}
-              >
-                <strong>{a.label}</strong>
-                <em>{a.note}</em>
-              </button>
-            ))}
+          <div className="bld__opts">
+            <div className="bld__aspect">
+              {ASPECTS.map((a) => (
+                <button
+                  key={a.key}
+                  className={aspect === a.key ? 'is-on' : ''}
+                  onClick={() => setAspect(a.key)}
+                >
+                  <strong>{a.label}</strong>
+                  <em>{a.note}</em>
+                </button>
+              ))}
+            </div>
+            <button
+              className={`bld__cc ${captions ? 'is-on' : ''}`}
+              onClick={() => setCaptions((v) => !v)}
+              title="Burn auto-captions from the transcript"
+            >
+              <strong>CC</strong>
+              <em>{captions ? 'on' : 'off'}</em>
+            </button>
           </div>
 
           {clips.length === 0 ? (

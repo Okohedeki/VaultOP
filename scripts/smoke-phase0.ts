@@ -167,6 +167,7 @@ async function main(): Promise<void> {
     )
     const cut = ctx.createCut({
       aspect: 'square',
+      captions: false,
       clips: [
         { sectionId: null, masterId: master.id, startMs: 0, endMs: 1000, speed: 1 },
         { sectionId: null, masterId: master.id, startMs: 1000, endMs: 2000, speed: 2 },
@@ -188,6 +189,27 @@ async function main(): Promise<void> {
     console.log(
       `· editor Cut: EDL (2 clips, one at 2× speed) rendered ${cpr.width}x${cpr.height}, ${cutV.durationMs}ms ✓`,
     )
+
+    // 4e-ter. Captions (E3): seed a timestamped transcript, render a captioned Cut →
+    // maps transcript onto the EDL timeline and burns an SRT (no ML needed here).
+    ctx.repo.setTranscriptChunks(master.id, [
+      { startMs: 0, endMs: 800, text: 'hello there' },
+      { startMs: 800, endMs: 1600, text: 'welcome to the show' },
+    ])
+    assert(ctx.repo.getTranscriptChunks(master.id).length === 2, 'transcript chunks should persist')
+    const capCut = ctx.createCut({
+      aspect: 'vertical',
+      captions: true,
+      clips: [{ sectionId: null, masterId: master.id, startMs: 0, endMs: 1600, speed: 1 }],
+    })
+    await ctx.queue.drain()
+    const capV = ctx.repo.getVariant(capCut.variantId)
+    assert(capV?.renderState === 'ready', `captioned cut render state '${capV?.renderState}'`)
+    const capOut = join(work, 'cap.mp4')
+    await ctx.exportVariant(capCut.variantId, capOut)
+    const capr = await ffprobe(capOut)
+    assert(capr.width === 1080 && capr.height === 1920, `captioned cut dims ${capr.width}x${capr.height}`)
+    console.log(`· captions: transcript persisted, SRT burned into Cut ${capr.width}x${capr.height} ✓`)
 
     // 4f. Phase 5: variant fan-out — one master → the full set.
     const fan = ctx.createFanout(assetId)

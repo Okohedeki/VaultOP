@@ -462,6 +462,34 @@ export class Repo {
     this.db.prepare('UPDATE segment SET transcript_text = ? WHERE id = ?').run(text, segmentId)
   }
 
+  /** Replace a Master's verbatim timestamped transcript (whisper chunks) for captions. */
+  setTranscriptChunks(
+    masterId: string,
+    chunks: Array<{ startMs: number; endMs: number; text: string }>,
+  ): void {
+    const t = this.now()
+    const del = this.db.prepare('DELETE FROM transcript WHERE master_id = ?')
+    const ins = this.db.prepare(
+      'INSERT INTO transcript (id, master_id, start_ms, end_ms, text, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    )
+    const tx = this.db.transaction(() => {
+      del.run(masterId)
+      for (const c of chunks) {
+        const text = c.text.trim()
+        if (text) ins.run(randomUUID(), masterId, c.startMs, c.endMs, text, t)
+      }
+    })
+    tx()
+  }
+
+  getTranscriptChunks(masterId: string): Array<{ startMs: number; endMs: number; text: string }> {
+    return this.db
+      .prepare(
+        'SELECT start_ms AS startMs, end_ms AS endMs, text FROM transcript WHERE master_id = ? ORDER BY start_ms',
+      )
+      .all(masterId) as Array<{ startMs: number; endMs: number; text: string }>
+  }
+
   getSegmentTags(segmentId: string): SegTag[] {
     return this.db
       .prepare('SELECT key, value, confidence, source FROM tag WHERE segment_id = ? ORDER BY key')

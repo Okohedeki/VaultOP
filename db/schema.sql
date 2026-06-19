@@ -99,6 +99,20 @@ CREATE TABLE IF NOT EXISTS section_tag (
 CREATE INDEX IF NOT EXISTS idx_section_tag_section ON section_tag(section_id);
 CREATE INDEX IF NOT EXISTS idx_section_tag_value ON section_tag(value);
 
+-- ── Transcript ───────────────────────────────────────────────────────────────
+-- Word/phrase-timestamped speech for a Master (whisper chunks), kept verbatim so
+-- the Builder can map a Cut's clips back onto the timeline and burn captions (E3).
+-- Distinct from segment.transcript (which is just merged per-scene text for search).
+CREATE TABLE IF NOT EXISTS transcript (
+  id         TEXT PRIMARY KEY,
+  master_id  TEXT NOT NULL REFERENCES master(id) ON DELETE CASCADE,
+  start_ms   INTEGER NOT NULL,
+  end_ms     INTEGER NOT NULL,
+  text       TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_transcript_master ON transcript(master_id);
+
 -- ── Detection ──────────────────────────────────────────────────────────────
 -- Accuracy-critical, spatial, per-keyframe-interval. Drives blur masks.
 -- Separate from tag because tags are summary metadata; detections are regions.

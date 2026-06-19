@@ -94,7 +94,7 @@ export const SearchHit = z.object({
 })
 export type SearchHit = z.infer<typeof SearchHit>
 
-export const VariantType = z.enum(['teaser', 'compilation', 'vertical', 'gif', 'paid'])
+export const VariantType = z.enum(['teaser', 'compilation', 'vertical', 'gif', 'paid', 'cut'])
 export type VariantType = z.infer<typeof VariantType>
 
 export const Aspect = z.enum(['vertical', 'square', 'widescreen'])
@@ -159,6 +159,27 @@ export const Section = z.object({
   updatedAt: z.number().int(),
 })
 export type Section = z.infer<typeof Section>
+
+/**
+ * EDL (Edit Decision List) — the Builder's output and the atomic thing a render job
+ * consumes. An ordered list of clips on the main track; each clip references a Master
+ * with an in/out window and a playback speed. Captions/overlays land in a later phase.
+ */
+export const EdlClip = z.object({
+  sectionId: z.string().nullable(), // provenance; render uses master + in/out directly
+  masterId: z.string(),
+  startMs: z.number().int(),
+  endMs: z.number().int(),
+  speed: z.number().positive().default(1),
+  label: z.string().nullable().optional(),
+})
+export type EdlClip = z.infer<typeof EdlClip>
+
+export const Edl = z.object({
+  aspect: Aspect,
+  clips: z.array(EdlClip).min(1),
+})
+export type Edl = z.infer<typeof Edl>
 
 export const Job = z.object({
   id: z.string(),

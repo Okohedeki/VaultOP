@@ -96,6 +96,8 @@ export function registerIpc(ctx: VaultContext, getWindow: () => BrowserWindow | 
     tags: ctx.repo.getSegmentTags(req.segmentId).map((t) => ({ key: t.key, value: t.value })),
   }))
 
+  handle('cut:create', async (req) => ctx.createCut(req.edl))
+
   handle('assembly:teaser', async (req) => ctx.createTeaser(req.assetId))
 
   handle('assembly:compilation', async (req) =>

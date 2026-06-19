@@ -114,11 +114,24 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
         `return hits.length===1 && hits[0].tags.some(t=>t.value==='reveal');` +
         `})()`,
     )
-    // Back to the segment grid.
+    // ── 3c. Builder: assemble a Cut from a Section and render it ─────────────
     await js(
-      `[...document.querySelectorAll('.ed__head button')].find(b=>/vault/i.test(b.textContent))?.click(); true`,
+      `[...document.querySelectorAll('.ed__head-actions button')].find(b=>/build cut/i.test(b.textContent))?.click(); true`,
     )
-    await wait(600)
+    await wait(900)
+    checks.builderOpen = await js<boolean>(`!!document.querySelector('.bld')`)
+    await js(`document.querySelector('.bld__pool-list .bld__add')?.click(); true`)
+    await wait(300)
+    checks.cutClipAdded = (await js<number>(`document.querySelectorAll('.bld__clip').length`)) >= 1
+    await shot('3c-builder')
+    await js(
+      `[...document.querySelectorAll('.ed__head-actions button')].find(b=>/render cut/i.test(b.textContent))?.click(); true`,
+    )
+    checks.cutRendered = await pollUntil(
+      () => ctx!.repo.listVariants().some((v) => v.type === 'cut' && v.renderState === 'ready'),
+      60_000,
+    )
+    await wait(600) // onRendered returns to the segment grid
 
     // ── 4. Make a teaser → deliverable appears, gated for review ─────────────
     await js(

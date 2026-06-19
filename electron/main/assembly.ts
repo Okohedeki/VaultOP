@@ -85,11 +85,27 @@ export function makeRenderHandler(deps: {
     const colorNormalize = recipe.colorNormalize === true
     const asGif = recipe.format === 'gif'
 
-    const resolved = capToDuration(
-      repo.resolveSegmentsForRender(variant.sourceSegmentIds),
-      maxDurationMs,
-    )
-    if (resolved.length === 0) throw new Error('no segments resolved for render')
+    // A Cut renders from an EDL (ordered clips + per-clip speed); legacy teaser/
+    // compilation variants render from their selected segment ids. Both reduce to
+    // the same ordered list of normalized clips that get concatenated.
+    type Item = { masterHash: string; startMs: number; endMs: number; speed: number }
+    let items: Item[]
+    if (recipe.kind === 'edl') {
+      const edl = recipe.edl as { clips?: Array<Record<string, unknown>> } | undefined
+      const clips = (edl?.clips ?? []) as Array<{
+        masterId: string
+        startMs: number
+        endMs: number
+        speed?: number
+      }>
+      items = repo.resolveEdlForRender(clips)
+    } else {
+      items = capToDuration(
+        repo.resolveSegmentsForRender(variant.sourceSegmentIds),
+        maxDurationMs,
+      ).map((s) => ({ masterHash: s.masterHash, startMs: s.startMs, endMs: s.endMs, speed: 1 }))
+    }
+    if (items.length === 0) throw new Error('no clips resolved for render')
 
     const decrypted = new Map<string, string>() // masterHash → tmp plaintext path
     const clipPaths: string[] = []
@@ -99,7 +115,7 @@ export function makeRenderHandler(deps: {
 
     try {
       // Decrypt each unique master once.
-      for (const seg of resolved) {
+      for (const seg of items) {
         if (!decrypted.has(seg.masterHash)) {
           const p = join(paths.tmpDir, `${randomUUID()}.master.mp4`)
           await blobs.getToFile(seg.masterHash, p)
@@ -108,10 +124,10 @@ export function makeRenderHandler(deps: {
       }
       setProgress(0.15)
 
-      // Render each segment to a normalized TS clip.
+      // Render each clip to a normalized TS clip (applying per-clip speed).
       let totalMs = 0
-      for (let i = 0; i < resolved.length; i++) {
-        const seg = resolved[i]!
+      for (let i = 0; i < items.length; i++) {
+        const seg = items[i]!
         const master = decrypted.get(seg.masterHash)!
         const clip = join(paths.tmpDir, `${randomUUID()}.clip.ts`)
         await renderNormalizedClip({
@@ -122,10 +138,11 @@ export function makeRenderHandler(deps: {
           hasAudio: await probeHasAudio(master),
           output: clip,
           colorNormalize,
+          speed: seg.speed,
         })
         clipPaths.push(clip)
-        totalMs += seg.endMs - seg.startMs
-        setProgress(0.15 + ((i + 1) / resolved.length) * 0.65)
+        totalMs += Math.round((seg.endMs - seg.startMs) / seg.speed)
+        setProgress(0.15 + ((i + 1) / items.length) * 0.65)
       }
 
       // Concat (lossless), optionally convert to GIF, then encrypt into the vault.

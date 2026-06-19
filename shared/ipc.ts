@@ -6,6 +6,7 @@ import { z } from 'zod'
 import {
   Aspect,
   Asset,
+  Edl,
   Job,
   MaskRegion,
   Master,
@@ -103,6 +104,10 @@ export const ipcContract = {
   'segments:tags': {
     request: z.object({ segmentId: z.string() }),
     response: z.object({ tags: z.array(z.object({ key: z.string(), value: z.string() })) }),
+  },
+  'cut:create': {
+    request: z.object({ edl: Edl }),
+    response: z.object({ variantId: z.string() }),
   },
   'assembly:teaser': {
     request: z.object({ assetId: z.string() }),

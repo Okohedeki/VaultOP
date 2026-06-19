@@ -8,6 +8,7 @@ import './editor.css'
 interface Props {
   asset: Asset
   onBack: () => void
+  onBuild?: () => void
 }
 
 function fmt(ms: number): string {
@@ -20,7 +21,7 @@ function fmt(ms: number): string {
 
 const ZOOMS = [4, 8, 16, 32, 64, 120]
 
-export function Tagger({ asset, onBack }: Props) {
+export function Tagger({ asset, onBack, onBuild }: Props) {
   const sx = useSections(asset.id)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [currentMs, setCurrentMs] = useState(0)
@@ -134,6 +135,11 @@ export function Tagger({ asset, onBack }: Props) {
           <Badge tone="ok">
             {sx.sections.length} section{sx.sections.length === 1 ? '' : 's'}
           </Badge>
+          {onBuild && (
+            <Button variant="primary" onClick={onBuild}>
+              ⧉ Build Cut →
+            </Button>
+          )}
         </div>
       </div>
 

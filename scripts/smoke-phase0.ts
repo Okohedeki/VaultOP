@@ -155,6 +155,40 @@ async function main(): Promise<void> {
     assert(cp.durationMs > 1000, 'compilation should stitch both clips')
     console.log(`· compilation rendered ${cp.width}x${cp.height}, ${cv.durationMs}ms across 2 sources`)
 
+    // 4e-bis. Editor (E1/E2): seed Sections, tag one, then build a Cut from an EDL
+    // with a per-clip speed change — the Builder's core output path.
+    ctx.repo.ensureSectionsForMaster(master.id)
+    const secs = ctx.repo.listSectionsByMaster(master.id)
+    assert(secs.length >= 1, 'sections should seed from scenes')
+    ctx.repo.addSectionTag(secs[0]!.id, 'Reveal')
+    assert(
+      ctx.repo.sectionsByTag('reveal', master.id).length === 1,
+      'tag filter should find the tagged section (case-insensitive)',
+    )
+    const cut = ctx.createCut({
+      aspect: 'square',
+      clips: [
+        { sectionId: null, masterId: master.id, startMs: 0, endMs: 1000, speed: 1 },
+        { sectionId: null, masterId: master.id, startMs: 1000, endMs: 2000, speed: 2 },
+      ],
+    })
+    await ctx.queue.drain()
+    const cutV = ctx.repo.getVariant(cut.variantId)
+    assert(cutV?.renderState === 'ready', `cut render state is '${cutV?.renderState}'`)
+    assert(cutV.type === 'cut' && !cutV.requiresReview, 'a Cut must not be platform-gated (ADR-001)')
+    const cutOut = join(work, 'cut.mp4')
+    await ctx.exportVariant(cut.variantId, cutOut) // no gate → exports directly
+    const cpr = await ffprobe(cutOut)
+    assert(cpr.width === 1080 && cpr.height === 1080, `cut dims ${cpr.width}x${cpr.height}, want 1080x1080`)
+    // clip1 (1000ms @1×) + clip2 (1000ms @2× → ~500ms) ≈ 1500ms.
+    assert(
+      cpr.durationMs > 1100 && cpr.durationMs < 2000,
+      `cut duration ${cpr.durationMs}ms outside expected ~1500ms (speed change not applied?)`,
+    )
+    console.log(
+      `· editor Cut: EDL (2 clips, one at 2× speed) rendered ${cpr.width}x${cpr.height}, ${cutV.durationMs}ms ✓`,
+    )
+
     // 4f. Phase 5: variant fan-out — one master → the full set.
     const fan = ctx.createFanout(assetId)
     assert(fan.variantIds.length === 4, 'fan-out should create 4 cuts')

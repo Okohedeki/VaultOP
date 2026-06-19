@@ -162,6 +162,22 @@ export async function probeHasAudio(input: string): Promise<boolean> {
  * canvas (scale-to-cover + center-crop → clean reframe), always with a stereo
  * audio track (silent if the source has none). TS clips concat losslessly.
  */
+/** Build an atempo filter chain for an arbitrary speed (atempo only spans 0.5–2.0). */
+function atempoChain(speed: number): string {
+  let s = speed
+  const parts: string[] = []
+  while (s > 2.0) {
+    parts.push('atempo=2.0')
+    s /= 2.0
+  }
+  while (s < 0.5) {
+    parts.push('atempo=0.5')
+    s /= 0.5
+  }
+  parts.push(`atempo=${s.toFixed(6)}`)
+  return parts.join(',')
+}
+
 export async function renderNormalizedClip(opts: {
   master: string
   startMs: number
@@ -170,22 +186,27 @@ export async function renderNormalizedClip(opts: {
   hasAudio: boolean
   output: string
   colorNormalize?: boolean
+  /** Playback speed; >1 faster, <1 slower. Default 1. */
+  speed?: number
 }): Promise<void> {
   const { master, startMs, endMs, canvas, hasAudio, output } = opts
+  const speed = opts.speed && opts.speed > 0 ? opts.speed : 1
   const dur = (endMs - startMs) / 1000
   // Optional gentle color/levels "pop" so promo cuts look graded, not flat.
   const grade = opts.colorNormalize ? ',eq=contrast=1.05:saturation=1.07:brightness=0.012' : ''
+  // setpts before fps so the time-warp is resampled back to the canvas fps.
+  const warp = speed !== 1 ? `,setpts=${(1 / speed).toFixed(6)}*PTS` : ''
   const vf =
     `scale=${canvas.width}:${canvas.height}:force_original_aspect_ratio=increase,` +
-    `crop=${canvas.width}:${canvas.height},setsar=1,fps=${canvas.fps}${grade},format=yuv420p`
+    `crop=${canvas.width}:${canvas.height},setsar=1${warp},fps=${canvas.fps}${grade},format=yuv420p`
 
   const args = ['-ss', (startMs / 1000).toFixed(3), '-t', dur.toFixed(3), '-i', master]
   if (!hasAudio) {
     args.push('-f', 'lavfi', '-t', dur.toFixed(3), '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000')
   }
+  args.push('-filter:v', vf)
+  if (hasAudio && speed !== 1) args.push('-filter:a', atempoChain(speed))
   args.push(
-    '-filter:v',
-    vf,
     '-map',
     '0:v:0',
     '-map',

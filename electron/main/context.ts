@@ -21,7 +21,7 @@ import { stableHash } from './hash'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { rm } from 'node:fs/promises'
-import type { Aspect, MaskRegion, ReviewInfo, VariantType } from '@shared/domain'
+import type { Aspect, Edl, MaskRegion, ReviewInfo, VariantType } from '@shared/domain'
 
 export interface VaultContext {
   paths: VaultPaths
@@ -38,6 +38,8 @@ export interface VaultContext {
   createTeaser(assetId: string): { variantId: string }
   /** Stitch arbitrary segments (cross-library) into a compilation. */
   createCompilation(segmentIds: string[], aspect: Aspect): { variantId: string }
+  /** Build a Cut (pure edit, no platform gate) from an EDL produced by the Builder. */
+  createCut(edl: Edl): { variantId: string }
   /** One master → the full deliverable set: vertical + square teasers, preview GIF, paid cut. */
   createFanout(assetId: string): { variantIds: string[] }
   /** Export an approved variant with a per-fan forensic watermark burned in. */
@@ -163,6 +165,19 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
         aspect,
         recipeJson: JSON.stringify({ kind: 'compilation' }),
         sourceSegmentIds: segmentIds,
+      })
+      enqueueRender(variantId)
+      return { variantId }
+    },
+    createCut(edl: Edl): { variantId: string } {
+      if (edl.clips.length === 0) throw new Error('cut has no clips')
+      // A Cut is pure editing output — no platform-safety gate (ADR-001). It becomes
+      // gated only when turned into a Promo for a specific platform.
+      const variantId = repo.createVariant({
+        type: 'cut',
+        aspect: edl.aspect,
+        recipeJson: JSON.stringify({ kind: 'edl', edl }),
+        sourceSegmentIds: [],
       })
       enqueueRender(variantId)
       return { variantId }

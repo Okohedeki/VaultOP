@@ -635,6 +635,25 @@ export class Repo {
     return rows.map(mapVariant)
   }
 
+  /** Resolve an EDL's clips to ordered render inputs (master blob + in/out + speed). */
+  resolveEdlForRender(
+    clips: Array<{ masterId: string; startMs: number; endMs: number; speed?: number }>,
+  ): Array<{ masterHash: string; startMs: number; endMs: number; speed: number }> {
+    const stmt = this.db.prepare('SELECT storage_uri FROM master WHERE id = ?')
+    const out: Array<{ masterHash: string; startMs: number; endMs: number; speed: number }> = []
+    for (const c of clips) {
+      const r = stmt.get(c.masterId) as { storage_uri: string } | undefined
+      if (!r) continue
+      out.push({
+        masterHash: r.storage_uri.replace('blobs/', ''),
+        startMs: c.startMs,
+        endMs: c.endMs,
+        speed: c.speed && c.speed > 0 ? c.speed : 1,
+      })
+    }
+    return out
+  }
+
   /** Resolve segment ids to ordered render inputs (master blob + in/out points). */
   resolveSegmentsForRender(
     ids: string[],

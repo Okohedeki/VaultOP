@@ -8,6 +8,7 @@ import { SearchResults } from './components/SearchResults'
 import { DeliverablesPanel } from './components/DeliverablesPanel'
 import { ReviewModal } from './components/ReviewModal'
 import { Tagger } from './editor/Tagger'
+import { Builder } from './editor/Builder'
 import { Badge } from './design/primitives'
 import type { SearchMode } from './state/useSearch'
 import type { Aspect } from '@shared/domain'
@@ -16,6 +17,7 @@ export function App() {
   const vault = useVault()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [buildMode, setBuildMode] = useState(false)
   const [query, setQuery] = useState('')
   const [similarTo, setSimilarTo] = useState<string | null>(null)
   const [reviewingId, setReviewingId] = useState<string | null>(null)
@@ -61,7 +63,22 @@ export function App() {
 
       {editing ? (
         <div className="app__body app__body--editor">
-          <Tagger asset={editing} onBack={() => setEditingId(null)} />
+          {buildMode ? (
+            <Builder
+              asset={editing}
+              onBack={() => setBuildMode(false)}
+              onRendered={() => {
+                setBuildMode(false)
+                setEditingId(null)
+              }}
+            />
+          ) : (
+            <Tagger
+              asset={editing}
+              onBack={() => setEditingId(null)}
+              onBuild={() => setBuildMode(true)}
+            />
+          )}
         </div>
       ) : (
       <div className="app__body">

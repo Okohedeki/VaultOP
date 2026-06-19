@@ -15,6 +15,7 @@ import { makeRenderHandler, RENDER_VERSION, CANVASES } from './assembly'
 import { NativeAnalyzer } from './analyzer'
 import { NoopDetector } from './detector'
 import { makeTranscribeHandler, NullTranscriber, WhisperTranscriber } from './transcribe'
+import { makeTagHandler, NullTagger, ClipTagger } from './tagger'
 import { blurRegions, extractThumbnail, watermarkClip, type BlurRegion } from './ffmpeg'
 import { stableHash } from './hash'
 import { join } from 'node:path'
@@ -72,10 +73,13 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
   queue.register('transcode', makeTranscodeHandler({ repo, blobs, paths }))
   queue.register('scene_split', makeSceneSplitHandler({ repo, blobs, paths, analyzer }))
   queue.register('render', makeRenderHandler({ repo, blobs, paths }))
+  const tfCache = join(paths.base, 'models', 'transformers')
   const transcriber = process.env.VAULTOP_NO_ML
     ? new NullTranscriber()
-    : new WhisperTranscriber(join(paths.base, 'models', 'transformers'))
+    : new WhisperTranscriber(tfCache)
   queue.register('transcribe', makeTranscribeHandler({ repo, blobs, paths, transcriber }))
+  const tagger = process.env.VAULTOP_NO_ML ? new NullTagger() : new ClipTagger(tfCache)
+  queue.register('tag', makeTagHandler({ repo, blobs, paths, tagger }))
 
   function enqueueRender(variantId: string): void {
     queue.enqueue({

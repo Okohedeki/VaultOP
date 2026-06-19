@@ -16,6 +16,7 @@ import { detectSceneCuts, extractThumbnail } from './ffmpeg'
 import { embeddingToBuffer, type Analyzer } from './analyzer'
 import { stableHash } from './hash'
 import { TRANSCRIBE_VERSION } from './transcribe'
+import { TAG_VERSION } from './tagger'
 import { log } from './log'
 
 export const SCENE_SPLIT_VERSION = 'scene-split-v1'
@@ -115,6 +116,14 @@ export function makeSceneSplitHandler(deps: {
         targetId: assetId,
         workerClass: 'gpu',
         inputHash: stableHash(['transcribe', TRANSCRIBE_VERSION, assetId]),
+      })
+      // Semantic auto-tags (setting, who's-in-frame) via CLIP, on first-use model.
+      repo.enqueueJob({
+        type: 'tag',
+        targetType: 'asset',
+        targetId: assetId,
+        workerClass: 'gpu',
+        inputHash: stableHash(['tag', TAG_VERSION, assetId]),
       })
     } catch (e) {
       repo.setAssetStatus(assetId, 'failed', e instanceof Error ? e.message : String(e))

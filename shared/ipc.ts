@@ -54,9 +54,17 @@ export const ipcContract = {
     request: z.object({ segmentIds: z.array(z.string()).min(1), aspect: Aspect }),
     response: z.object({ variantId: z.string() }),
   },
+  'assembly:fanout': {
+    request: z.object({ assetId: z.string() }),
+    response: z.object({ variantIds: z.array(z.string()) }),
+  },
   'variants:list': {
     request: z.object({}),
     response: z.object({ variants: z.array(Variant) }),
+  },
+  'variant:exportWatermarked': {
+    request: z.object({ variantId: z.string(), fanLabel: z.string() }),
+    response: z.object({ path: z.string().nullable() }),
   },
   'variant:export': {
     request: z.object({ variantId: z.string() }),

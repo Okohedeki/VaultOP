@@ -16,8 +16,10 @@ export interface VaultState {
   addFiles: (paths: string[]) => Promise<void>
   pickAndAdd: () => Promise<void>
   makeTeaser: (assetId: string) => Promise<void>
+  makeFanout: (assetId: string) => Promise<void>
   makeCompilation: (segmentIds: string[], aspect: Aspect) => Promise<void>
   exportVariant: (variantId: string) => Promise<string | null>
+  exportWatermarked: (variantId: string, fanLabel: string) => Promise<string | null>
 }
 
 export function useVault(): VaultState {
@@ -78,6 +80,15 @@ export function useVault(): VaultState {
     await getBridge().invoke('assembly:teaser', { assetId })
   }, [])
 
+  const makeFanout = useCallback(async (assetId: string) => {
+    await getBridge().invoke('assembly:fanout', { assetId })
+  }, [])
+
+  const exportWatermarked = useCallback(async (variantId: string, fanLabel: string) => {
+    const res = await getBridge().invoke('variant:exportWatermarked', { variantId, fanLabel })
+    return res.path
+  }, [])
+
   const makeCompilation = useCallback(async (segmentIds: string[], aspect: Aspect) => {
     await getBridge().invoke('assembly:compilation', { segmentIds, aspect })
   }, [])
@@ -96,7 +107,9 @@ export function useVault(): VaultState {
     addFiles,
     pickAndAdd,
     makeTeaser,
+    makeFanout,
     makeCompilation,
     exportVariant,
+    exportWatermarked,
   }
 }

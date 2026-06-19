@@ -67,7 +67,20 @@ export function registerIpc(ctx: VaultContext, getWindow: () => BrowserWindow | 
     ctx.createCompilation(req.segmentIds, req.aspect),
   )
 
+  handle('assembly:fanout', async (req) => ctx.createFanout(req.assetId))
+
   handle('variants:list', async () => ({ variants: ctx.repo.listVariants() }))
+
+  handle('variant:exportWatermarked', async (req) => {
+    const win = getWindow()
+    const res = await dialog.showSaveDialog(win ?? undefined!, {
+      defaultPath: `${req.fanLabel.replace(/[^a-z0-9]+/gi, '-')}.mp4`,
+      filters: [{ name: 'Video', extensions: ['mp4'] }],
+    })
+    if (res.canceled || !res.filePath) return { path: null }
+    await ctx.exportWatermarked(req.variantId, req.fanLabel, res.filePath)
+    return { path: res.filePath }
+  })
 
   handle('variant:export', async (req) => {
     const win = getWindow()

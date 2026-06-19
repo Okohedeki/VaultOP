@@ -65,6 +65,7 @@ export function App() {
               onBack={() => setSelectedId(null)}
               onFindSimilar={findSimilar}
               onMakeTeaser={(id) => void vault.makeTeaser(id)}
+              onMakeFanout={(id) => void vault.makeFanout(id)}
             />
           ) : searchMode ? (
             <div className="seg">

@@ -10,9 +10,17 @@ interface Props {
   onBack: () => void
   onFindSimilar: (segmentId: string) => void
   onMakeTeaser: (assetId: string) => void
+  onMakeFanout: (assetId: string) => void
 }
 
-export function SegmentGrid({ asset, revision, onBack, onFindSimilar, onMakeTeaser }: Props) {
+export function SegmentGrid({
+  asset,
+  revision,
+  onBack,
+  onFindSimilar,
+  onMakeTeaser,
+  onMakeFanout,
+}: Props) {
   const { loadState, error, segments } = useSegments(asset.id, revision)
   const analyzing = asset.status === 'analyzing' || asset.status === 'transcoding'
 
@@ -33,9 +41,12 @@ export function SegmentGrid({ asset, revision, onBack, onFindSimilar, onMakeTeas
           )}
         </div>
         {segments.length > 0 && (
-          <Button variant="primary" onClick={() => onMakeTeaser(asset.id)}>
-            ✦ Make 30s teaser
-          </Button>
+          <div className="seg__actions">
+            <Button onClick={() => onMakeTeaser(asset.id)}>✦ 30s teaser</Button>
+            <Button variant="primary" onClick={() => onMakeFanout(asset.id)}>
+              ✨ Make all promos
+            </Button>
+          </div>
         )}
       </div>
 

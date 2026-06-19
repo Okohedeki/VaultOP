@@ -62,6 +62,8 @@ const HELP = {
     'similar <segmentId>': 'visual-similarity search',
     'teaser <assetId> [--no-wait]': 'render a 30s vertical teaser (enters review gate)',
     'compile <segId,segId,...> [--aspect widescreen|vertical|square] [--no-wait]': 'stitch a compilation',
+    'fanout <assetId> [--no-wait]': 'one master → the full set (vertical+square teasers, GIF, paid)',
+    'watermark <variantId> <fanLabel> <dest.mp4>': 'export an approved cut with a per-fan forensic watermark',
     'review <variantId>': 'show review state + masks',
     'mask <variantId> <x,y,w,h> [more...]': 'set blur masks (normalized 0..1)',
     'approve <variantId>': 're-blur with masks + approve (unlocks export)',
@@ -161,6 +163,27 @@ export async function runCli(
           await pollUntil(() => c.repo.getVariant(variantId), (v) => v.renderState === 'ready' || v.renderState === 'failed', 600_000)
         }
         out({ ok: true, variant: c.repo.getVariant(variantId) })
+        return 0
+      }
+      case 'fanout': {
+        const [assetId] = positionals
+        if (!assetId) throw new Error('fanout needs an assetId')
+        const { variantIds } = c.createFanout(assetId)
+        if (wantWait) {
+          for (const id of variantIds) {
+            await pollUntil(() => c.repo.getVariant(id), (v) => v.renderState === 'ready' || v.renderState === 'failed', 600_000)
+          }
+        }
+        out({ ok: true, variants: variantIds.map((id) => c.repo.getVariant(id)) })
+        return 0
+      }
+      case 'watermark': {
+        const [variantId, fanLabel, dest] = positionals
+        if (!variantId || !fanLabel || !dest) {
+          throw new Error('watermark needs <variantId> <fanLabel> <dest.mp4>')
+        }
+        await c.exportWatermarked(variantId, fanLabel, dest)
+        out({ ok: true, path: dest, fan: fanLabel })
         return 0
       }
       case 'review': {

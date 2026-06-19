@@ -274,6 +274,11 @@
   gap: var(--sp-3);
   min-width: 0;
 }
+.seg__actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
 .seg__name {
   font-weight: 600;
   font-size: var(--fs-lg);

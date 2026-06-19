@@ -18,6 +18,8 @@ import {
   type SearchHit,
   type SegTag,
   type Segment,
+  type Section,
+  type SectionTag,
   type Variant,
   type VariantType,
   type WorkerClass,
@@ -283,6 +285,138 @@ export class Repo {
       hasThumbnail: r.keyframe_uri != null,
       createdAt: r.created_at,
     }))
+  }
+
+  // ── Sections (creator-defined tagged ranges — the assembly unit) ───────────
+
+  /** Seed Sections from the auto Scenes on first open (idempotent per Master). */
+  ensureSectionsForMaster(masterId: string): void {
+    const existing = this.db
+      .prepare('SELECT COUNT(*) AS n FROM section WHERE master_id = ?')
+      .get(masterId) as { n: number }
+    if (existing.n > 0) return
+    const scenes = this.db
+      .prepare('SELECT start_ms, end_ms FROM segment WHERE master_id = ? ORDER BY start_ms')
+      .all(masterId) as Array<{ start_ms: number; end_ms: number }>
+    const t = this.now()
+    const insert = this.db.prepare(
+      `INSERT INTO section (id, master_id, start_ms, end_ms, source, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'scene', ?, ?)`,
+    )
+    const seed = this.db.transaction(() => {
+      for (const s of scenes) insert.run(randomUUID(), masterId, s.start_ms, s.end_ms, t, t)
+    })
+    seed()
+  }
+
+  createSection(input: {
+    masterId: string
+    startMs: number
+    endMs: number
+    label?: string | null
+  }): Section {
+    const id = randomUUID()
+    const t = this.now()
+    this.db
+      .prepare(
+        `INSERT INTO section (id, master_id, start_ms, end_ms, label, source, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 'manual', ?, ?)`,
+      )
+      .run(id, input.masterId, input.startMs, input.endMs, input.label ?? null, t, t)
+    return this.getSection(id)!
+  }
+
+  updateSection(
+    id: string,
+    patch: { startMs?: number; endMs?: number; label?: string | null; favorite?: boolean },
+  ): Section | null {
+    const cur = this.getSection(id)
+    if (!cur) return null
+    this.db
+      .prepare(
+        'UPDATE section SET start_ms = ?, end_ms = ?, label = ?, favorite = ?, updated_at = ? WHERE id = ?',
+      )
+      .run(
+        patch.startMs ?? cur.startMs,
+        patch.endMs ?? cur.endMs,
+        patch.label !== undefined ? patch.label : cur.label,
+        (patch.favorite ?? cur.favorite) ? 1 : 0,
+        this.now(),
+        id,
+      )
+    return this.getSection(id)
+  }
+
+  deleteSection(id: string): void {
+    this.db.prepare('DELETE FROM section WHERE id = ?').run(id)
+  }
+
+  addSectionTag(sectionId: string, value: string, source = 'manual', confidence?: number): void {
+    this.db
+      .prepare(
+        `INSERT OR IGNORE INTO section_tag (id, section_id, value, source, confidence, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(randomUUID(), sectionId, value.trim().toLowerCase(), source, confidence ?? null, this.now())
+  }
+
+  removeSectionTag(sectionId: string, value: string): void {
+    this.db
+      .prepare('DELETE FROM section_tag WHERE section_id = ? AND value = ?')
+      .run(sectionId, value.trim().toLowerCase())
+  }
+
+  getSection(id: string): Section | null {
+    const r = this.db.prepare('SELECT * FROM section WHERE id = ?').get(id) as
+      | Record<string, unknown>
+      | undefined
+    return r ? this.mapSection(r) : null
+  }
+
+  listSectionsByMaster(masterId: string): Section[] {
+    const rows = this.db
+      .prepare('SELECT * FROM section WHERE master_id = ? ORDER BY start_ms ASC')
+      .all(masterId) as Array<Record<string, unknown>>
+    return rows.map((r) => this.mapSection(r))
+  }
+
+  /** Builder filter: Sections carrying a tag value, scoped to one Master or all. */
+  sectionsByTag(value: string, masterId: string | null): Section[] {
+    const v = value.trim().toLowerCase()
+    const rows = (
+      masterId
+        ? this.db
+            .prepare(
+              `SELECT s.* FROM section s JOIN section_tag t ON t.section_id = s.id
+               WHERE t.value = ? AND s.master_id = ? ORDER BY s.start_ms`,
+            )
+            .all(v, masterId)
+        : this.db
+            .prepare(
+              `SELECT s.* FROM section s JOIN section_tag t ON t.section_id = s.id
+               WHERE t.value = ? ORDER BY s.created_at`,
+            )
+            .all(v)
+    ) as Array<Record<string, unknown>>
+    return rows.map((r) => this.mapSection(r))
+  }
+
+  private mapSection(r: Record<string, unknown>): Section {
+    const tags = this.db
+      .prepare('SELECT value, source, confidence FROM section_tag WHERE section_id = ? ORDER BY value')
+      .all(r.id as string) as SectionTag[]
+    return {
+      id: r.id as string,
+      masterId: r.master_id as string,
+      startMs: r.start_ms as number,
+      endMs: r.end_ms as number,
+      label: (r.label as string | null) ?? null,
+      favorite: Boolean(r.favorite),
+      source: r.source as string,
+      tags,
+      createdAt: r.created_at as number,
+      updatedAt: r.updated_at as number,
+    }
   }
 
   // ── Tags / embeddings / search ────────────────────────────────────────────

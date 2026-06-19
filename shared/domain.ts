@@ -139,6 +139,27 @@ export const ReviewInfo = z.object({
 })
 export type ReviewInfo = z.infer<typeof ReviewInfo>
 
+export const SectionTag = z.object({
+  value: z.string(),
+  source: z.string(), // 'manual' | 'ai'
+  confidence: z.number().nullable(),
+})
+export type SectionTag = z.infer<typeof SectionTag>
+
+export const Section = z.object({
+  id: z.string(),
+  masterId: z.string(),
+  startMs: z.number().int(),
+  endMs: z.number().int(),
+  label: z.string().nullable(),
+  favorite: z.boolean(),
+  source: z.string(), // 'scene' (seeded) | 'manual'
+  tags: z.array(SectionTag),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+})
+export type Section = z.infer<typeof Section>
+
 export const Job = z.object({
   id: z.string(),
   type: JobType,

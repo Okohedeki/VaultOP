@@ -3,7 +3,17 @@
 // full type inference. If the contract drifts, the build breaks — by design.
 
 import { z } from 'zod'
-import { Aspect, Asset, Job, MaskRegion, ReviewInfo, SearchHit, Segment, Variant } from './domain'
+import {
+  Aspect,
+  Asset,
+  Job,
+  MaskRegion,
+  ReviewInfo,
+  SearchHit,
+  Section,
+  Segment,
+  Variant,
+} from './domain'
 
 /** invoke channels: renderer → main → response */
 export const ipcContract = {
@@ -29,6 +39,45 @@ export const ipcContract = {
   'segments:listByAsset': {
     request: z.object({ assetId: z.string() }),
     response: z.object({ segments: z.array(Segment) }),
+  },
+  'sections:listByMaster': {
+    request: z.object({ masterId: z.string() }),
+    response: z.object({ sections: z.array(Section) }),
+  },
+  'sections:create': {
+    request: z.object({
+      masterId: z.string(),
+      startMs: z.number().int(),
+      endMs: z.number().int(),
+      label: z.string().nullable().optional(),
+    }),
+    response: z.object({ section: Section }),
+  },
+  'sections:update': {
+    request: z.object({
+      id: z.string(),
+      startMs: z.number().int().optional(),
+      endMs: z.number().int().optional(),
+      label: z.string().nullable().optional(),
+      favorite: z.boolean().optional(),
+    }),
+    response: z.object({ section: Section.nullable() }),
+  },
+  'sections:delete': {
+    request: z.object({ id: z.string() }),
+    response: z.object({ ok: z.boolean() }),
+  },
+  'sections:tag': {
+    request: z.object({ sectionId: z.string(), value: z.string() }),
+    response: z.object({ ok: z.boolean() }),
+  },
+  'sections:untag': {
+    request: z.object({ sectionId: z.string(), value: z.string() }),
+    response: z.object({ ok: z.boolean() }),
+  },
+  'sections:byTag': {
+    request: z.object({ value: z.string(), masterId: z.string().nullable() }),
+    response: z.object({ sections: z.array(Section) }),
   },
   'thumb:get': {
     request: z.object({ segmentId: z.string() }),

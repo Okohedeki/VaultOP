@@ -51,6 +51,32 @@ export function registerIpc(ctx: VaultContext, getWindow: () => BrowserWindow | 
     segments: ctx.repo.listSegmentsByAsset(req.assetId),
   }))
 
+  handle('sections:listByMaster', async (req) => {
+    ctx.repo.ensureSectionsForMaster(req.masterId) // seed from Scenes on first open
+    return { sections: ctx.repo.listSectionsByMaster(req.masterId) }
+  })
+  handle('sections:create', async (req) => ({
+    section: ctx.repo.createSection(req),
+  }))
+  handle('sections:update', async (req) => ({
+    section: ctx.repo.updateSection(req.id, req),
+  }))
+  handle('sections:delete', async (req) => {
+    ctx.repo.deleteSection(req.id)
+    return { ok: true }
+  })
+  handle('sections:tag', async (req) => {
+    ctx.repo.addSectionTag(req.sectionId, req.value)
+    return { ok: true }
+  })
+  handle('sections:untag', async (req) => {
+    ctx.repo.removeSectionTag(req.sectionId, req.value)
+    return { ok: true }
+  })
+  handle('sections:byTag', async (req) => ({
+    sections: ctx.repo.sectionsByTag(req.value, req.masterId),
+  }))
+
   handle('thumb:get', async (req) => ({ dataUrl: await ctx.readThumbnailDataUrl(req.segmentId) }))
 
   handle('search:query', async (req) => ({ hits: ctx.repo.searchSegments(req.query) }))

@@ -69,6 +69,36 @@ CREATE TABLE IF NOT EXISTS tag (
 CREATE INDEX IF NOT EXISTS idx_tag_segment ON tag(segment_id);
 CREATE INDEX IF NOT EXISTS idx_tag_kv ON tag(key, value);
 
+-- ── Section ──────────────────────────────────────────────────────────────────
+-- A creator-defined, tagged time range on a Master — the unit Cuts are assembled
+-- from (ADR-0002). Distinct from the auto `segment` (Scene), which only seeds these.
+CREATE TABLE IF NOT EXISTS section (
+  id         TEXT PRIMARY KEY,
+  master_id  TEXT NOT NULL REFERENCES master(id) ON DELETE CASCADE,
+  start_ms   INTEGER NOT NULL,
+  end_ms     INTEGER NOT NULL,
+  label      TEXT,                                  -- optional human name
+  favorite   INTEGER NOT NULL DEFAULT 0,            -- the ⭐
+  source     TEXT NOT NULL DEFAULT 'manual',        -- 'scene' (seeded) | 'manual'
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_section_master ON section(master_id);
+
+-- ── SectionTag ───────────────────────────────────────────────────────────────
+-- A label on a Section, one flat filterable space: freeform (manual) + AI facets.
+CREATE TABLE IF NOT EXISTS section_tag (
+  id         TEXT PRIMARY KEY,
+  section_id TEXT NOT NULL REFERENCES section(id) ON DELETE CASCADE,
+  value      TEXT NOT NULL,
+  source     TEXT NOT NULL DEFAULT 'manual',        -- 'manual' | 'ai'
+  confidence REAL,
+  created_at INTEGER NOT NULL,
+  UNIQUE(section_id, value)
+);
+CREATE INDEX IF NOT EXISTS idx_section_tag_section ON section_tag(section_id);
+CREATE INDEX IF NOT EXISTS idx_section_tag_value ON section_tag(value);
+
 -- ── Detection ──────────────────────────────────────────────────────────────
 -- Accuracy-critical, spatial, per-keyframe-interval. Drives blur masks.
 -- Separate from tag because tags are summary metadata; detections are regions.

@@ -14,6 +14,8 @@ import type { Repo } from './repo'
 import type { JobContext, JobHandler } from './queue'
 import { detectSceneCuts, extractThumbnail } from './ffmpeg'
 import { embeddingToBuffer, type Analyzer } from './analyzer'
+import { stableHash } from './hash'
+import { TRANSCRIBE_VERSION } from './transcribe'
 import { log } from './log'
 
 export const SCENE_SPLIT_VERSION = 'scene-split-v1'
@@ -103,6 +105,17 @@ export function makeSceneSplitHandler(deps: {
       repo.setAssetStatus(assetId, 'ready', null)
       setProgress(1)
       log.info('scene_split.ready', { assetId, segments: ranges.length })
+
+      // Kick off speech transcription on the GPU lane (best-effort; downloads the
+      // whisper model on first use). The library is already searchable/sliceable;
+      // transcripts enrich search + enable captions when they land.
+      repo.enqueueJob({
+        type: 'transcribe',
+        targetType: 'asset',
+        targetId: assetId,
+        workerClass: 'gpu',
+        inputHash: stableHash(['transcribe', TRANSCRIBE_VERSION, assetId]),
+      })
     } catch (e) {
       repo.setAssetStatus(assetId, 'failed', e instanceof Error ? e.message : String(e))
       throw e

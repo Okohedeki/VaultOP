@@ -4,7 +4,12 @@ import react from '@vitejs/plugin-react'
 
 // Native modules must stay external so they load from node_modules at runtime
 // (electron-builder rebuilds them for the bundled Electron via install-app-deps).
-const nativeExternals = ['better-sqlite3', 'ffmpeg-static', 'ffprobe-static']
+const nativeExternals = [
+  'better-sqlite3',
+  'ffmpeg-static',
+  'ffprobe-static',
+  '@huggingface/transformers', // loaded lazily at runtime; models download on first use
+]
 
 export default defineConfig({
   main: {

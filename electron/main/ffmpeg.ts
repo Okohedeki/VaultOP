@@ -287,6 +287,40 @@ export async function blurRegions(
   ])
 }
 
+/** Extract mono 16kHz PCM WAV — the format speech models (whisper) expect. */
+export async function extractAudioWav(input: string, output: string): Promise<void> {
+  await run(FFMPEG_BIN, [
+    '-i',
+    input,
+    '-vn',
+    '-ac',
+    '1',
+    '-ar',
+    '16000',
+    '-c:a',
+    'pcm_s16le',
+    '-y',
+    output,
+  ])
+}
+
+/** Burn an SRT subtitle track into a clip (captions for promos). */
+export async function burnCaptions(input: string, srtPath: string, output: string): Promise<void> {
+  const esc = srtPath.replace(/([\\:'])/g, '\\$1')
+  await run(FFMPEG_BIN, [
+    '-i',
+    input,
+    '-vf',
+    `subtitles='${esc}':force_style='FontName=SF Pro Display,Outline=1,Shadow=0'`,
+    '-c:a',
+    'copy',
+    '-movflags',
+    '+faststart',
+    '-y',
+    output,
+  ])
+}
+
 /** Convert a rendered MP4 into a high-quality looping preview GIF. */
 export async function renderGif(
   input: string,

@@ -50,14 +50,19 @@ Grab an installer from the **[latest release](https://github.com/Okohedeki/Vault
 All processing runs through a durable SQLite job queue with cpu/gpu lanes and a live
 progress UI.
 
-## Native ML upgrades (optional, all MIT/Apache)
+## On-device AI (download on first use)
 
-The product is fully functional with **no model downloads**. Dropping in native ONNX
-models upgrades the analysis without code changes (see [docs/research.md](docs/research.md)):
-NudeNet (MIT) for explicit-region detection, OpenCLIP (MIT) for semantic tags, whisper.cpp
-(MIT) for transcription, YOLOX/SCRFD (Apache/MIT) for people/faces — run via
-`onnxruntime-node` (CoreML on macOS, DirectML on Windows) and whisper.cpp. The mandatory
-human gate sits on top of detection regardless.
+Real ML runs locally — nothing leaves your machine — and models download on first use
+(cached after), with graceful fallback to the built-in heuristics if offline:
+
+- **Transcription** — whisper (transformers.js) → per-scene transcripts that enrich search.
+- **Semantic tags** — CLIP zero-shot → real *setting* + *who's-in-frame* tags.
+- **Auto-blur prefill** — object detection finds people/faces and pre-fills the review
+  masks; the **mandatory human safety check sits on top regardless**.
+
+All via `@huggingface/transformers` (WASM/ONNX, no Python). Verified end-to-end in the
+notarized app (`VaultOP --mltest`). Region-class explicit detection (NudeNet) is the next
+drop-in upgrade behind the same interface.
 
 ## For agents & automation (CLI + MCP)
 

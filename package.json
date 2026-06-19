@@ -1,6 +1,6 @@
 {
   "name": "vaultop",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "VaultOP — local-first media pipeline for content creators. The vault is the spine.",
   "private": true,
   "main": "out/main/index.js",

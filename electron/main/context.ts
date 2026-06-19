@@ -22,6 +22,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { rm } from 'node:fs/promises'
 import type { Aspect, Edl, MaskRegion, ReviewInfo, VariantType } from '@shared/domain'
+import { PLATFORM_BY_KEY } from '@shared/platforms'
 
 export interface VaultContext {
   paths: VaultPaths
@@ -40,6 +41,8 @@ export interface VaultContext {
   createCompilation(segmentIds: string[], aspect: Aspect): { variantId: string }
   /** Build a Cut (pure edit, no platform gate) from an EDL produced by the Builder. */
   createCut(edl: Edl): { variantId: string }
+  /** Turn a finished Cut into platform-bound Promos (reframed + capped), each gated. */
+  makePromos(cutVariantId: string, platformKeys: string[]): { variantIds: string[] }
   /** One master → the full deliverable set: vertical + square teasers, preview GIF, paid cut. */
   createFanout(assetId: string): { variantIds: string[] }
   /** Export an approved variant with a per-fan forensic watermark burned in. */
@@ -181,6 +184,36 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
       })
       enqueueRender(variantId)
       return { variantId }
+    },
+    makePromos(cutVariantId: string, platformKeys: string[]): { variantIds: string[] } {
+      const cut = repo.getVariant(cutVariantId)
+      if (!cut) throw new Error('cut not found')
+      const recipe = repo.getVariantRecipe(cutVariantId)
+      const baseEdl = recipe.kind === 'edl' ? (recipe.edl as Edl | undefined) : undefined
+      if (!baseEdl) throw new Error('only a Cut (EDL) can be turned into Promos')
+      const ids: string[] = []
+      for (const key of platformKeys) {
+        const p = PLATFORM_BY_KEY[key]
+        if (!p) continue
+        // A Promo re-renders the Cut's EDL at the platform's aspect + length cap, and
+        // is platform-bound → it must pass the mandatory blur gate before hand-off.
+        const variantId = repo.createVariant({
+          type: 'promo',
+          aspect: p.aspect,
+          recipeJson: JSON.stringify({
+            kind: 'edl',
+            edl: { ...baseEdl, aspect: p.aspect },
+            maxDurationMs: p.maxLengthMs ?? undefined,
+            platform: p.key,
+          }),
+          sourceSegmentIds: [],
+        })
+        repo.openReview(variantId, `platform_bound_promo:${p.key}`)
+        enqueueRender(variantId)
+        ids.push(variantId)
+      }
+      if (ids.length === 0) throw new Error('no valid platforms selected')
+      return { variantIds: ids }
     },
     createFanout(assetId: string): { variantIds: string[] } {
       const segmentIds = repo

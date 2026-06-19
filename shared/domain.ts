@@ -94,7 +94,15 @@ export const SearchHit = z.object({
 })
 export type SearchHit = z.infer<typeof SearchHit>
 
-export const VariantType = z.enum(['teaser', 'compilation', 'vertical', 'gif', 'paid', 'cut'])
+export const VariantType = z.enum([
+  'teaser',
+  'compilation',
+  'vertical',
+  'gif',
+  'paid',
+  'cut',
+  'promo',
+])
 export type VariantType = z.infer<typeof VariantType>
 
 export const Aspect = z.enum(['vertical', 'square', 'widescreen'])

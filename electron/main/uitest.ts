@@ -135,21 +135,27 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     )
     await wait(600) // onRendered returns to the segment grid
 
-    // ── 4. Make a teaser → deliverable appears, gated for review ─────────────
+    // ── 4. Cut → Promos: pick a platform → gated promo renders ───────────────
+    await wait(500) // let the Cut deliverable broadcast into the side panel
     await js(
-      `[...document.querySelectorAll('.seg__head button')].find(b=>/teaser/i.test(b.textContent))?.click(); true`,
+      `[...document.querySelectorAll('.app__side button')].find(b=>/make promos/i.test(b.textContent))?.click(); true`,
     )
-    checks.teaserRendered = await pollUntil(
-      () => ctx!.repo.listVariants()[0]?.renderState === 'ready',
+    await wait(300)
+    checks.promoPicker = await js<boolean>(`!!document.querySelector('.promo-pick')`)
+    await js(
+      `[...document.querySelectorAll('.promo-pick button')].find(b=>/create .*promo/i.test(b.textContent))?.click(); true`,
+    )
+    checks.promoRendered = await pollUntil(
+      () => ctx!.repo.listVariants().some((v) => v.type === 'promo' && v.renderState === 'ready'),
       60_000,
     )
     await wait(700)
     checks.gateVisible = await js<boolean>(
       `[...document.querySelectorAll('button')].some(b=>/review to unlock/i.test(b.textContent))`,
     )
-    await shot('4-teaser-gate')
+    await shot('4-promos-gate')
 
-    // ── 5. Review the teaser → modal opens, approve → export unlocks ─────────
+    // ── 5. Review the promo → modal opens, approve → export unlocks ──────────
     await js(
       `[...document.querySelectorAll('button')].find(b=>/review to unlock/i.test(b.textContent))?.click(); true`,
     )
@@ -159,10 +165,10 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     await js(
       `[...document.querySelectorAll('.modal button')].find(b=>/approve/i.test(b.textContent))?.click(); true`,
     )
-    checks.approved = await pollUntil(
-      () => ctx!.repo.getVariant(ctx!.repo.listVariants()[0]!.id)?.reviewState === 'approved',
-      40_000,
-    )
+    checks.approved = await pollUntil(() => {
+      const promo = ctx!.repo.listVariants().find((v) => v.type === 'promo')
+      return promo ? ctx!.repo.getVariant(promo.id)?.reviewState === 'approved' : false
+    }, 40_000)
     await wait(900) // let the unlocked state broadcast to the UI
     checks.exportUnlocked = await js<boolean>(
       `[...document.querySelectorAll('.app__side button')].some(b=>/export/i.test(b.textContent)) ` +

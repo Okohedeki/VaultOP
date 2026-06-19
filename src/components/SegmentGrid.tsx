@@ -9,9 +9,8 @@ interface Props {
   revision: number
   onBack: () => void
   onEdit: (assetId: string) => void
+  onQuickDraft: (assetId: string) => void
   onFindSimilar: (segmentId: string) => void
-  onMakeTeaser: (assetId: string) => void
-  onMakeFanout: (assetId: string) => void
 }
 
 export function SegmentGrid({
@@ -19,9 +18,8 @@ export function SegmentGrid({
   revision,
   onBack,
   onEdit,
+  onQuickDraft,
   onFindSimilar,
-  onMakeTeaser,
-  onMakeFanout,
 }: Props) {
   const { loadState, error, segments } = useSegments(asset.id, revision)
   const analyzing = asset.status === 'analyzing' || asset.status === 'transcoding'
@@ -47,8 +45,9 @@ export function SegmentGrid({
             <Button variant="primary" onClick={() => onEdit(asset.id)}>
               ✂️ Edit &amp; tag
             </Button>
-            <Button onClick={() => onMakeTeaser(asset.id)}>✦ 30s teaser</Button>
-            <Button onClick={() => onMakeFanout(asset.id)}>✨ All promos</Button>
+            <Button onClick={() => onQuickDraft(asset.id)} title="Auto-draft a cut from your top sections">
+              ⚡ Quick draft
+            </Button>
           </div>
         )}
       </div>

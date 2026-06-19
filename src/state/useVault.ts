@@ -18,6 +18,7 @@ export interface VaultState {
   makeTeaser: (assetId: string) => Promise<void>
   makeFanout: (assetId: string) => Promise<void>
   makeCompilation: (segmentIds: string[], aspect: Aspect) => Promise<void>
+  makePromos: (cutVariantId: string, platforms: string[]) => Promise<void>
   exportVariant: (variantId: string) => Promise<string | null>
   exportWatermarked: (variantId: string, fanLabel: string) => Promise<string | null>
 }
@@ -93,6 +94,10 @@ export function useVault(): VaultState {
     await getBridge().invoke('assembly:compilation', { segmentIds, aspect })
   }, [])
 
+  const makePromos = useCallback(async (cutVariantId: string, platforms: string[]) => {
+    await getBridge().invoke('promos:create', { cutVariantId, platforms })
+  }, [])
+
   const exportVariant = useCallback(async (variantId: string) => {
     const res = await getBridge().invoke('variant:export', { variantId })
     return res.path
@@ -109,6 +114,7 @@ export function useVault(): VaultState {
     makeTeaser,
     makeFanout,
     makeCompilation,
+    makePromos,
     exportVariant,
     exportWatermarked,
   }

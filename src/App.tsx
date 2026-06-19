@@ -18,7 +18,19 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [buildMode, setBuildMode] = useState(false)
+  const [draftMode, setDraftMode] = useState(false)
   const [query, setQuery] = useState('')
+
+  const openDraft = (assetId: string): void => {
+    setEditingId(assetId)
+    setBuildMode(true)
+    setDraftMode(true)
+  }
+  const exitEditor = (): void => {
+    setEditingId(null)
+    setBuildMode(false)
+    setDraftMode(false)
+  }
   const [similarTo, setSimilarTo] = useState<string | null>(null)
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const selected = selectedId ? (vault.assets.find((a) => a.id === selectedId) ?? null) : null
@@ -66,18 +78,12 @@ export function App() {
           {buildMode ? (
             <Builder
               asset={editing}
-              onBack={() => setBuildMode(false)}
-              onRendered={() => {
-                setBuildMode(false)
-                setEditingId(null)
-              }}
+              draft={draftMode}
+              onBack={() => (draftMode ? exitEditor() : setBuildMode(false))}
+              onRendered={exitEditor}
             />
           ) : (
-            <Tagger
-              asset={editing}
-              onBack={() => setEditingId(null)}
-              onBuild={() => setBuildMode(true)}
-            />
+            <Tagger asset={editing} onBack={exitEditor} onBuild={() => setBuildMode(true)} />
           )}
         </div>
       ) : (
@@ -89,9 +95,8 @@ export function App() {
               revision={selected.updatedAt}
               onBack={() => setSelectedId(null)}
               onEdit={(id) => setEditingId(id)}
+              onQuickDraft={openDraft}
               onFindSimilar={findSimilar}
-              onMakeTeaser={(id) => void vault.makeTeaser(id)}
-              onMakeFanout={(id) => void vault.makeFanout(id)}
             />
           ) : searchMode ? (
             <div className="seg">
@@ -148,6 +153,7 @@ export function App() {
             jobProgressFor={jobProgressFor}
             onExport={vault.exportVariant}
             onReview={setReviewingId}
+            onMakePromos={vault.makePromos}
           />
         </aside>
       </div>

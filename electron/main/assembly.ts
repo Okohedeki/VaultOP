@@ -61,6 +61,33 @@ export function capToDuration<T extends { startMs: number; endMs: number }>(
   return out
 }
 
+/** Cap EDL items to a max OUTPUT duration, trimming the final clip's source window
+ *  so its sped/slowed rendered length exactly fills the remaining budget. */
+export function capItemsToOutput<T extends { startMs: number; endMs: number; speed: number }>(
+  items: T[],
+  maxOutMs: number | undefined,
+): T[] {
+  if (!maxOutMs) return items
+  const out: T[] = []
+  let total = 0
+  for (const it of items) {
+    if (total >= maxOutMs) break
+    const speed = it.speed > 0 ? it.speed : 1
+    const outLen = (it.endMs - it.startMs) / speed
+    const remaining = maxOutMs - total
+    if (outLen <= remaining) {
+      out.push(it)
+      total += outLen
+    } else {
+      // Keep only the source portion whose rendered length fits the budget.
+      out.push({ ...it, endMs: Math.round(it.startMs + remaining * speed) })
+      total += remaining
+      break
+    }
+  }
+  return out
+}
+
 export function makeRenderHandler(deps: {
   repo: Repo
   blobs: BlobStore
@@ -100,7 +127,9 @@ export function makeRenderHandler(deps: {
         endMs: number
         speed?: number
       }>
-      items = repo.resolveEdlForRender(clips)
+      // A Promo caps the Cut's EDL to the platform's max length (on OUTPUT time,
+      // so a sped-up clip counts by its rendered duration).
+      items = capItemsToOutput(repo.resolveEdlForRender(clips), maxDurationMs)
     } else {
       items = capToDuration(
         repo.resolveSegmentsForRender(variant.sourceSegmentIds),

@@ -98,6 +98,8 @@ export function registerIpc(ctx: VaultContext, getWindow: () => BrowserWindow | 
 
   handle('cut:create', async (req) => ctx.createCut(req.edl))
 
+  handle('promos:create', async (req) => ctx.makePromos(req.cutVariantId, req.platforms))
+
   handle('assembly:teaser', async (req) => ctx.createTeaser(req.assetId))
 
   handle('assembly:compilation', async (req) =>

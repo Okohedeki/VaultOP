@@ -211,6 +211,36 @@ async function main(): Promise<void> {
     assert(capr.width === 1080 && capr.height === 1920, `captioned cut dims ${capr.width}x${capr.height}`)
     console.log(`· captions: transcript persisted, SRT burned into Cut ${capr.width}x${capr.height} ✓`)
 
+    // 4e-quater. Promos (E4): turn the Cut into platform-bound Promos → reframed,
+    // capped, and gated. The Cut itself had no gate; its Promos do.
+    const promos = ctx.makePromos(cut.variantId, ['tiktok', 'feed'])
+    assert(promos.variantIds.length === 2, 'two promos expected')
+    await ctx.queue.drain()
+    const pvs = promos.variantIds.map((id) => ctx.repo.getVariant(id)!)
+    assert(pvs.every((v) => v.renderState === 'ready'), 'promos should render')
+    assert(
+      pvs.every((v) => v.type === 'promo' && v.requiresReview && v.reviewState === 'pending'),
+      'every Promo must be platform-gated',
+    )
+    const tk = pvs.find((v) => v.aspect === 'vertical')!
+    assert(pvs.some((v) => v.aspect === 'square'), 'IG feed promo should be square')
+    let pblocked = false
+    try {
+      await ctx.exportVariant(tk.id, join(work, 'nope2.mp4'))
+    } catch {
+      pblocked = true
+    }
+    assert(pblocked, 'promo export must be blocked until approved')
+    ctx.setReviewMasks(tk.id, [{ x: 0.2, y: 0.4, w: 0.3, h: 0.3 }])
+    await ctx.approveReview(tk.id)
+    const tkOut = join(work, 'promo-tiktok.mp4')
+    await ctx.exportVariant(tk.id, tkOut)
+    const tkr = await ffprobe(tkOut)
+    assert(tkr.width === 1080 && tkr.height === 1920, `tiktok promo dims ${tkr.width}x${tkr.height}`)
+    console.log(
+      `· promos: Cut → 2 platform Promos (reframed + gated); TikTok exported ${tkr.width}x${tkr.height} after approve ✓`,
+    )
+
     // 4f. Phase 5: variant fan-out — one master → the full set.
     const fan = ctx.createFanout(assetId)
     assert(fan.variantIds.length === 4, 'fan-out should create 4 cuts')

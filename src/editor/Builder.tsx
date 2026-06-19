@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Asset, Aspect, Section } from '@shared/domain'
 import { Badge, Button, EmptyState, Spinner } from '../design/primitives'
 import { useSections } from '../state/useSections'
@@ -10,6 +10,8 @@ interface Props {
   onBack: () => void
   /** Called after a Cut is queued — return to the vault to watch it render. */
   onRendered: () => void
+  /** Quick-draft: pre-fill the cut with ⭐/top sections so the user just refines. */
+  draft?: boolean
 }
 
 interface Clip {
@@ -36,7 +38,17 @@ function clipOut(c: Clip): number {
   return Math.round((c.endMs - c.startMs) / c.speed)
 }
 
-export function Builder({ asset, onBack, onRendered }: Props) {
+const sectionToClip = (s: Section): Clip => ({
+  uid: window.crypto.randomUUID(),
+  sectionId: s.id,
+  masterId: s.masterId,
+  startMs: s.startMs,
+  endMs: s.endMs,
+  speed: 1,
+  label: s.label || s.tags[0]?.value || 'section',
+})
+
+export function Builder({ asset, onBack, onRendered, draft }: Props) {
   const sx = useSections(asset.id)
   const [scope, setScope] = useState<'clip' | 'library'>('clip')
   const [tag, setTag] = useState('')
@@ -77,19 +89,18 @@ export function Builder({ asset, onBack, onRendered }: Props) {
   }, [scope, tag, master, sx.sections])
 
   const add = useCallback((s: Section) => {
-    setClips((cs) => [
-      ...cs,
-      {
-        uid: window.crypto.randomUUID(),
-        sectionId: s.id,
-        masterId: s.masterId,
-        startMs: s.startMs,
-        endMs: s.endMs,
-        speed: 1,
-        label: s.label || s.tags[0]?.value || 'section',
-      },
-    ])
+    setClips((cs) => [...cs, sectionToClip(s)])
   }, [])
+
+  // Quick-draft: seed the cut once from favorites (or the first handful of sections).
+  const seeded = useRef(false)
+  useEffect(() => {
+    if (!draft || seeded.current || sx.loadState !== 'ready') return
+    seeded.current = true
+    const favs = sx.sections.filter((s) => s.favorite)
+    const pick = (favs.length ? favs : sx.sections).slice(0, 6)
+    if (pick.length) setClips(pick.map(sectionToClip))
+  }, [draft, sx.loadState, sx.sections])
 
   const move = (i: number, dir: -1 | 1): void => {
     setClips((cs) => {

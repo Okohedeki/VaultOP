@@ -109,6 +109,10 @@ export const ipcContract = {
     request: z.object({ edl: Edl }),
     response: z.object({ variantId: z.string() }),
   },
+  'promos:create': {
+    request: z.object({ cutVariantId: z.string(), platforms: z.array(z.string()).min(1) }),
+    response: z.object({ variantIds: z.array(z.string()) }),
+  },
   'assembly:teaser': {
     request: z.object({ assetId: z.string() }),
     response: z.object({ variantId: z.string() }),

@@ -20,16 +20,42 @@
   background: linear-gradient(180deg, var(--bg-elev), var(--bg-deep));
   border-right: 1px solid var(--hairline);
   -webkit-app-region: drag;
+  overflow: hidden;
+  transition: width var(--t);
 }
 .side button,
 .side input {
   -webkit-app-region: no-drag;
 }
+.side__top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
 .side__brand {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: 0 var(--sp-2);
+  padding: 0 var(--sp-1);
+  min-width: 0;
+  flex: 1;
+}
+.side__collapse {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--fg-faint);
+  cursor: pointer;
+  transition: color var(--t-fast), background var(--t-fast), transform var(--t);
+}
+.side__collapse:hover {
+  color: var(--fg);
+  background: var(--bg-elev-2);
 }
 .app__logo {
   width: 32px;
@@ -65,7 +91,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   background: var(--grad);
   color: #fff;
   border: none;
@@ -76,13 +102,11 @@
   cursor: pointer;
   box-shadow: var(--shadow-accent);
   transition: transform var(--t-fast), filter var(--t-fast);
+  white-space: nowrap;
 }
 .side__add:hover {
   transform: translateY(-1px);
   filter: brightness(1.06);
-}
-.side__add-plus {
-  font-size: 16px;
 }
 
 .side__search {
@@ -92,9 +116,10 @@
 }
 .side__search-icon {
   position: absolute;
-  left: 11px;
+  left: 10px;
+  display: grid;
+  place-items: center;
   color: var(--fg-faint);
-  font-size: 14px;
   pointer-events: none;
 }
 .side__search input {
@@ -102,13 +127,24 @@
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 9px 12px 9px 30px;
+  padding: 9px 12px 9px 32px;
   color: var(--fg);
   font-size: var(--fs-sm);
 }
 .side__search input:focus {
   outline: none;
   border-color: var(--accent);
+}
+.side__search-btn {
+  width: 100%;
+  height: 36px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.side__search-btn:hover {
+  border-color: var(--border-strong);
 }
 
 .side__nav {
@@ -142,13 +178,16 @@
   box-shadow: inset 2px 0 0 var(--accent);
 }
 .side__item-icon {
-  width: 18px;
-  text-align: center;
-  font-size: 15px;
-  opacity: 0.9;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  opacity: 0.92;
 }
 .side__item-label {
   flex: 1;
+  white-space: nowrap;
 }
 .side__item-count {
   font-size: var(--fs-xs);
@@ -176,21 +215,71 @@
 .side__status {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   font-size: var(--fs-xs);
   color: var(--fg-muted);
 }
 .side__status-dot {
+  flex: none;
   width: 7px;
   height: 7px;
   border-radius: var(--r-pill);
   background: var(--ok);
   box-shadow: 0 0 8px var(--ok);
 }
+.side__status-label {
+  white-space: nowrap;
+}
 .side__status.is-busy .side__status-dot {
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent);
   animation: vop-glow-pulse 1.4s ease infinite;
+}
+
+/* ── Collapsed rail: icon-only ── */
+.side.is-collapsed {
+  width: 68px;
+  padding-left: var(--sp-3);
+  padding-right: var(--sp-3);
+}
+.side.is-collapsed .app__brand,
+.side.is-collapsed .side__add-label,
+.side.is-collapsed .side__item-label,
+.side.is-collapsed .side__item-count,
+.side.is-collapsed .side__status-label {
+  display: none;
+}
+.side.is-collapsed .side__top {
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.side.is-collapsed .side__brand {
+  justify-content: center;
+  padding: 0;
+}
+.side.is-collapsed .side__add {
+  padding: 11px 0;
+}
+.side.is-collapsed .side__item {
+  justify-content: center;
+  padding: 10px 0;
+  position: relative;
+}
+.side.is-collapsed .side__status {
+  justify-content: center;
+}
+/* keep the alert badge visible (as a dot) even when collapsed */
+.side.is-collapsed .side__item-alert {
+  position: absolute;
+  top: 4px;
+  right: 10px;
+  min-width: 8px;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
 }
 
 /* ── Content: one focused view at a time ──────────────────────────────────── */

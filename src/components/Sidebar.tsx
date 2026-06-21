@@ -1,4 +1,12 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import {
+  ActivityIcon,
+  ChevronsIcon,
+  PlusIcon,
+  SearchIcon,
+  SparkleIcon,
+  VaultIcon,
+} from './icons'
 
 export type View = 'vault' | 'deliverables' | 'activity'
 
@@ -19,49 +27,91 @@ interface Props {
   counts: { vault: number; deliverables: number; pendingReview: number; activeJobs: number }
 }
 
+const COLLAPSE_KEY = 'vaultop.sidebar.collapsed'
+
 export function Sidebar({ view, onView, query, onQuery, onAdd, counts }: Props) {
+  const [collapsed, setCollapsed] = useState(false)
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1')
+    } catch {
+      /* no storage (tests) — default expanded */
+    }
+  }, [])
+  const toggle = (): void => {
+    setCollapsed((c) => {
+      const next = !c
+      try {
+        localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0')
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }
+
   const items: NavItem[] = [
-    { view: 'vault', label: 'Vault', icon: '▦', count: counts.vault },
+    { view: 'vault', label: 'Vault', icon: <VaultIcon />, count: counts.vault },
     {
       view: 'deliverables',
       label: 'Deliverables',
-      icon: '✦',
+      icon: <SparkleIcon />,
       count: counts.deliverables,
       alert: counts.pendingReview,
     },
-    { view: 'activity', label: 'Activity', icon: '◴', count: counts.activeJobs },
+    { view: 'activity', label: 'Activity', icon: <ActivityIcon />, count: counts.activeJobs },
   ]
 
   return (
-    <nav className="side">
-      <div className="side__brand">
-        <div className="app__logo">V</div>
-        <div className="app__brand">
-          <h1>
-            <span className="grad-text">Vault</span>OP
-          </h1>
-          <span className="tag">creator studio</span>
+    <nav className={`side ${collapsed ? 'is-collapsed' : ''}`}>
+      <div className="side__top">
+        <div className="side__brand">
+          <div className="app__logo">V</div>
+          <div className="app__brand">
+            <h1>
+              <span className="grad-text">Vault</span>OP
+            </h1>
+            <span className="tag">creator studio</span>
+          </div>
         </div>
+        <button
+          className="side__collapse"
+          onClick={toggle}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand' : 'Collapse'}
+        >
+          <ChevronsIcon />
+        </button>
       </div>
 
-      <button className="side__add" onClick={onAdd}>
-        <span className="side__add-plus">＋</span> Add footage
+      <button className="side__add" onClick={onAdd} title="Add footage">
+        <PlusIcon width={16} height={16} />
+        <span className="side__add-label">Add footage</span>
       </button>
 
       <div className="side__search">
         <span className="side__search-icon" aria-hidden>
-          ⌕
+          <SearchIcon width={15} height={15} />
         </span>
-        <input
-          type="search"
-          placeholder="Search the vault…"
-          value={query}
-          onChange={(e) => {
-            onQuery(e.target.value)
-            if (e.target.value.trim()) onView('vault')
-          }}
-          aria-label="Search the vault"
-        />
+        {collapsed ? (
+          <button
+            className="side__search-btn"
+            onClick={toggle}
+            aria-label="Search"
+            title="Search the vault"
+          />
+        ) : (
+          <input
+            type="search"
+            placeholder="Search the vault…"
+            value={query}
+            onChange={(e) => {
+              onQuery(e.target.value)
+              if (e.target.value.trim()) onView('vault')
+            }}
+            aria-label="Search the vault"
+          />
+        )}
       </div>
 
       <div className="side__nav">
@@ -71,6 +121,7 @@ export function Sidebar({ view, onView, query, onQuery, onAdd, counts }: Props) 
             className={`side__item ${view === it.view ? 'is-active' : ''}`}
             onClick={() => onView(it.view)}
             data-view={it.view}
+            title={it.label}
           >
             <span className="side__item-icon" aria-hidden>
               {it.icon}
@@ -88,15 +139,12 @@ export function Sidebar({ view, onView, query, onQuery, onAdd, counts }: Props) 
       </div>
 
       <div className="side__foot">
-        {counts.activeJobs > 0 ? (
-          <span className="side__status is-busy">
-            <span className="side__status-dot" /> {counts.activeJobs} processing…
+        <span className={`side__status ${counts.activeJobs > 0 ? 'is-busy' : ''}`}>
+          <span className="side__status-dot" />
+          <span className="side__status-label">
+            {counts.activeJobs > 0 ? `${counts.activeJobs} processing…` : 'All caught up'}
           </span>
-        ) : (
-          <span className="side__status">
-            <span className="side__status-dot" /> All caught up
-          </span>
-        )}
+        </span>
       </div>
     </nav>
   )

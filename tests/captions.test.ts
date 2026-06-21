@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { buildCues, buildSrtFromEdl, type CaptionClip, type TranscriptChunk } from '../electron/main/captions'
+import {
+  buildAssFromOverlays,
+  buildCues,
+  buildSrtFromEdl,
+  type CaptionClip,
+  type TranscriptChunk,
+} from '../electron/main/captions'
 
 const M = 'master-1'
 const transcripts = new Map<string, TranscriptChunk[]>([
@@ -46,5 +52,30 @@ describe('caption mapping (EDL → output timeline)', () => {
   it('returns empty string when there is no overlapping speech', () => {
     const clips: CaptionClip[] = [{ masterId: 'other', startMs: 0, endMs: 1000, speed: 1 }]
     expect(buildSrtFromEdl(clips, transcripts)).toBe('')
+  })
+})
+
+describe('text overlays → ASS', () => {
+  const canvas = { width: 1080, height: 1920 }
+
+  it('positions overlays via \\an alignment and ASS timing', () => {
+    const ass = buildAssFromOverlays(
+      [
+        { text: 'Hello', startMs: 0, endMs: 2000, position: 'top' },
+        { text: 'Bye', startMs: 2000, endMs: 4500, position: 'center' },
+      ],
+      canvas,
+    )
+    expect(ass).toContain('PlayResX: 1080')
+    expect(ass).toContain('PlayResY: 1920')
+    expect(ass).toContain('Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,{\\an8}Hello')
+    expect(ass).toContain('Dialogue: 0,0:00:02.00,0:00:04.50,Default,,0,0,0,,{\\an5}Bye')
+  })
+
+  it('strips braces, skips empty / zero-length, and returns empty doc for none', () => {
+    expect(buildAssFromOverlays([], canvas)).toBe('')
+    expect(buildAssFromOverlays([{ text: '   ', startMs: 0, endMs: 1000, position: 'bottom' }], canvas)).toBe('')
+    const ass = buildAssFromOverlays([{ text: '{x}Safe', startMs: 0, endMs: 1000, position: 'bottom' }], canvas)
+    expect(ass).toContain('{\\an2}xSafe')
   })
 })

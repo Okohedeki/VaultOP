@@ -24,6 +24,14 @@ interface Clip {
   label: string
 }
 
+interface Overlay {
+  uid: string
+  text: string
+  startSec: number
+  endSec: number
+  position: 'top' | 'center' | 'bottom'
+}
+
 const SPEEDS = [0.5, 1, 1.5, 2]
 const ASPECTS: { key: Aspect; label: string; note: string }[] = [
   { key: 'vertical', label: '9:16', note: 'TikTok / Reels' },
@@ -57,6 +65,7 @@ export function Builder({ asset, onBack, onRendered, draft }: Props) {
   const [clips, setClips] = useState<Clip[]>([])
   const [aspect, setAspect] = useState<Aspect>('vertical')
   const [captions, setCaptions] = useState(false)
+  const [overlays, setOverlays] = useState<Overlay[]>([])
   const [rendering, setRendering] = useState(false)
 
   const master = sx.master
@@ -115,6 +124,16 @@ export function Builder({ asset, onBack, onRendered, draft }: Props) {
     setClips((cs) => cs.map((c) => (c.uid === uid ? { ...c, speed } : c)))
   const removeClip = (uid: string): void => setClips((cs) => cs.filter((c) => c.uid !== uid))
 
+  const addOverlay = (): void =>
+    setOverlays((o) => [
+      ...o,
+      { uid: window.crypto.randomUUID(), text: 'Title', startSec: 0, endSec: 3, position: 'bottom' },
+    ])
+  const setOverlay = (uid: string, patch: Partial<Overlay>): void =>
+    setOverlays((o) => o.map((x) => (x.uid === uid ? { ...x, ...patch } : x)))
+  const removeOverlay = (uid: string): void =>
+    setOverlays((o) => o.filter((x) => x.uid !== uid))
+
   const totalMs = clips.reduce((n, c) => n + clipOut(c), 0)
 
   const render = useCallback(async () => {
@@ -133,13 +152,21 @@ export function Builder({ asset, onBack, onRendered, draft }: Props) {
             speed: c.speed,
             label: c.label,
           })),
+          overlays: overlays
+            .filter((o) => o.text.trim() && o.endSec > o.startSec)
+            .map((o) => ({
+              text: o.text.trim(),
+              startMs: Math.round(o.startSec * 1000),
+              endMs: Math.round(o.endSec * 1000),
+              position: o.position,
+            })),
         },
       })
       onRendered()
     } finally {
       setRendering(false)
     }
-  }, [clips, aspect, captions, onRendered])
+  }, [clips, aspect, captions, overlays, onRendered])
 
   if (sx.loadState === 'loading') {
     return (
@@ -304,6 +331,58 @@ export function Builder({ asset, onBack, onRendered, draft }: Props) {
               ))}
             </ol>
           )}
+
+          <div className="bld__overlays">
+            <div className="bld__overlays-h">
+              <span>Text overlays</span>
+              <button className="bld__ov-add" onClick={addOverlay}>
+                ＋ Title
+              </button>
+            </div>
+            {overlays.map((o) => (
+              <div key={o.uid} className="bld__ov">
+                <input
+                  className="bld__ov-text"
+                  value={o.text}
+                  onChange={(e) => setOverlay(o.uid, { text: e.target.value })}
+                  placeholder="overlay text…"
+                />
+                <select
+                  className="bld__ov-pos"
+                  value={o.position}
+                  onChange={(e) => setOverlay(o.uid, { position: e.target.value as Overlay['position'] })}
+                  aria-label="Position"
+                >
+                  <option value="top">top</option>
+                  <option value="center">center</option>
+                  <option value="bottom">bottom</option>
+                </select>
+                <input
+                  className="bld__ov-num"
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={o.startSec}
+                  onChange={(e) => setOverlay(o.uid, { startSec: Math.max(0, Number(e.target.value)) })}
+                  aria-label="Start (s)"
+                />
+                <span className="bld__ov-dash">–</span>
+                <input
+                  className="bld__ov-num"
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={o.endSec}
+                  onChange={(e) => setOverlay(o.uid, { endSec: Math.max(0, Number(e.target.value)) })}
+                  aria-label="End (s)"
+                />
+                <span className="bld__ov-unit">s</span>
+                <button className="bld__ov-x" onClick={() => removeOverlay(o.uid)} aria-label="Remove overlay">
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
         </section>
       </div>
     </div>

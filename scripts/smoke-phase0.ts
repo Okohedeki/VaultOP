@@ -168,6 +168,7 @@ async function main(): Promise<void> {
     const cut = ctx.createCut({
       aspect: 'square',
       captions: false,
+      overlays: [],
       clips: [
         { sectionId: null, masterId: master.id, startMs: 0, endMs: 1000, speed: 1 },
         { sectionId: null, masterId: master.id, startMs: 1000, endMs: 2000, speed: 2 },
@@ -200,6 +201,8 @@ async function main(): Promise<void> {
     const capCut = ctx.createCut({
       aspect: 'vertical',
       captions: true,
+      // …and a manual text overlay → exercises the libass title burn alongside captions.
+      overlays: [{ text: 'GET 50% OFF', startMs: 0, endMs: 1200, position: 'top' }],
       clips: [{ sectionId: null, masterId: master.id, startMs: 0, endMs: 1600, speed: 1 }],
     })
     await ctx.queue.drain()
@@ -209,7 +212,9 @@ async function main(): Promise<void> {
     await ctx.exportVariant(capCut.variantId, capOut)
     const capr = await ffprobe(capOut)
     assert(capr.width === 1080 && capr.height === 1920, `captioned cut dims ${capr.width}x${capr.height}`)
-    console.log(`· captions: transcript persisted, SRT burned into Cut ${capr.width}x${capr.height} ✓`)
+    console.log(
+      `· captions + text overlay: SRT + ASS title burned into Cut ${capr.width}x${capr.height} ✓`,
+    )
 
     // 4e-quater. Promos (E4): turn the Cut into platform-bound Promos → reframed,
     // capped, and gated. The Cut itself had no gate; its Promos do.

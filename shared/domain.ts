@@ -183,11 +183,22 @@ export const EdlClip = z.object({
 })
 export type EdlClip = z.infer<typeof EdlClip>
 
+/** A manual text overlay (title/caption-by-hand) burned onto the Cut's timeline. */
+export const TextOverlay = z.object({
+  text: z.string().min(1),
+  startMs: z.number().int().nonnegative(),
+  endMs: z.number().int().positive(),
+  position: z.enum(['top', 'center', 'bottom']).default('bottom'),
+})
+export type TextOverlay = z.infer<typeof TextOverlay>
+
 export const Edl = z.object({
   aspect: Aspect,
   clips: z.array(EdlClip).min(1),
   /** Burn auto-captions from the source transcript onto the rendered Cut. */
   captions: z.boolean().optional().default(false),
+  /** Manual text overlays (titles) burned on the output timeline. */
+  overlays: z.array(TextOverlay).optional().default([]),
 })
 export type Edl = z.infer<typeof Edl>
 

@@ -24,7 +24,7 @@ import {
   renderNormalizedClip,
   type Canvas,
 } from './ffmpeg'
-import { buildSrtFromEdl, type CaptionClip } from './captions'
+import { buildAssFromOverlays, buildSrtFromEdl, type CaptionClip, type TextOverlayItem } from './captions'
 import type { Detector } from './detector'
 import { log } from './log'
 
@@ -145,6 +145,8 @@ export function makeRenderHandler(deps: {
     let gifFile: string | null = null
     let srtFile: string | null = null
     let captionedFile: string | null = null
+    let assFile: string | null = null
+    let overlaidFile: string | null = null
 
     try {
       // Decrypt each unique master once.
@@ -209,6 +211,23 @@ export function makeRenderHandler(deps: {
           log.info('render.captions_empty', { variantId })
         }
       }
+      // Manual text overlays (titles) — burned via the same libass path as captions.
+      if (recipe.kind === 'edl') {
+        const overlays = ((recipe.edl as { overlays?: TextOverlayItem[] }).overlays ?? []).filter(
+          (o) => o.endMs > o.startMs && o.text?.trim(),
+        )
+        if (overlays.length) {
+          const ass = buildAssFromOverlays(overlays, canvas)
+          if (ass.trim()) {
+            assFile = join(paths.tmpDir, `${randomUUID()}.ass`)
+            overlaidFile = join(paths.tmpDir, `${randomUUID()}.ov.mp4`)
+            await writeFile(assFile, ass, 'utf8')
+            await burnCaptions(finalFile, assFile, overlaidFile)
+            finalFile = overlaidFile
+            log.info('render.overlaid', { variantId, overlays: overlays.length })
+          }
+        }
+      }
       setProgress(0.9)
 
       if (asGif) {
@@ -256,6 +275,8 @@ export function makeRenderHandler(deps: {
         gifFile ? rm(gifFile, { force: true }) : Promise.resolve(),
         srtFile ? rm(srtFile, { force: true }) : Promise.resolve(),
         captionedFile ? rm(captionedFile, { force: true }) : Promise.resolve(),
+        assFile ? rm(assFile, { force: true }) : Promise.resolve(),
+        overlaidFile ? rm(overlaidFile, { force: true }) : Promise.resolve(),
       ])
     }
   }

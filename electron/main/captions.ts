@@ -52,6 +52,66 @@ export function buildCues(
   return cues
 }
 
+export interface TextOverlayItem {
+  text: string
+  startMs: number
+  endMs: number
+  position: 'top' | 'center' | 'bottom'
+}
+
+interface Canvas {
+  width: number
+  height: number
+}
+
+function assTime(ms: number): string {
+  const total = Math.max(0, Math.round(ms))
+  const h = Math.floor(total / 3_600_000)
+  const m = Math.floor((total % 3_600_000) / 60_000)
+  const s = Math.floor((total % 60_000) / 1000)
+  const cs = Math.floor((total % 1000) / 10)
+  const p = (n: number): string => String(n).padStart(2, '0')
+  return `${h}:${p(m)}:${p(s)}.${p(cs)}`
+}
+
+const AN_BY_POSITION: Record<TextOverlayItem['position'], number> = { top: 8, center: 5, bottom: 2 }
+
+/** Escape ASS dialogue text: drop braces (override-block delimiters) and newlines. */
+function assText(text: string): string {
+  return text.replace(/[{}]/g, '').replace(/\r?\n/g, '\\N').trim()
+}
+
+/** Build an ASS subtitle doc placing manual text overlays at their positions/times.
+ *  Burned through the same libass path as captions (font-safe). '' if no overlays. */
+export function buildAssFromOverlays(overlays: TextOverlayItem[], canvas: Canvas): string {
+  const items = overlays.filter((o) => o.endMs > o.startMs && o.text.trim())
+  if (items.length === 0) return ''
+  const fontSize = Math.max(18, Math.round(canvas.height / 18))
+  const marginV = Math.round(canvas.height / 12)
+  const header = [
+    '[Script Info]',
+    'ScriptType: v4.00+',
+    'WrapStyle: 0',
+    'ScaledBorderAndShadow: yes',
+    `PlayResX: ${canvas.width}`,
+    `PlayResY: ${canvas.height}`,
+    '',
+    '[V4+ Styles]',
+    'Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+    `Style: Default,Arial,${fontSize},&H00FFFFFF,&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,3,1,2,40,40,${marginV},1`,
+    '',
+    '[Events]',
+    'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+  ].join('\n')
+  const events = items
+    .map(
+      (o) =>
+        `Dialogue: 0,${assTime(o.startMs)},${assTime(o.endMs)},Default,,0,0,0,,{\\an${AN_BY_POSITION[o.position]}}${assText(o.text)}`,
+    )
+    .join('\n')
+  return `${header}\n${events}\n`
+}
+
 function srtTime(ms: number): string {
   const total = Math.max(0, Math.round(ms))
   const h = Math.floor(total / 3_600_000)

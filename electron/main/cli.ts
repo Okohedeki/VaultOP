@@ -220,7 +220,12 @@ export async function runCli(
           }
         })
         const aspect = (flags.aspect as Aspect) || 'vertical'
-        const { variantId } = c.createCut({ aspect, captions: flags.captions === true, clips })
+        const { variantId } = c.createCut({
+          aspect,
+          captions: flags.captions === true,
+          overlays: [],
+          clips,
+        })
         if (wantWait) {
           await pollUntil(() => c.repo.getVariant(variantId), (v) => v.renderState === 'ready' || v.renderState === 'failed', 600_000)
         }

@@ -11,6 +11,7 @@ dist/
 .claude/skills/*
 !.claude/skills/incremental-commits/
 !.claude/skills/creator-studio-design/
+!.claude/skills/emotional-ux-design/
 
 # Signing material — NEVER commit certs/keys (repo is public)
 *.cer

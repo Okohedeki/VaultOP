@@ -1,14 +1,17 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   ActivityIcon,
+  BuildIcon,
   ChevronsIcon,
+  CutsIcon,
   PlusIcon,
   SearchIcon,
   SparkleIcon,
+  TagIcon,
   VaultIcon,
 } from './icons'
 
-export type View = 'vault' | 'deliverables' | 'activity'
+export type View = 'vault' | 'tag' | 'build' | 'cuts' | 'promos' | 'activity'
 
 interface NavItem {
   view: View
@@ -24,7 +27,13 @@ interface Props {
   query: string
   onQuery: (q: string) => void
   onAdd: () => void
-  counts: { vault: number; deliverables: number; pendingReview: number; activeJobs: number }
+  counts: {
+    vault: number
+    cuts: number
+    promos: number
+    pendingReview: number
+    activeJobs: number
+  }
 }
 
 const COLLAPSE_KEY = 'vaultop.sidebar.collapsed'
@@ -52,11 +61,14 @@ export function Sidebar({ view, onView, query, onQuery, onAdd, counts }: Props) 
 
   const items: NavItem[] = [
     { view: 'vault', label: 'Vault', icon: <VaultIcon />, count: counts.vault },
+    { view: 'tag', label: 'Tag', icon: <TagIcon /> },
+    { view: 'build', label: 'Build', icon: <BuildIcon /> },
+    { view: 'cuts', label: 'Cuts', icon: <CutsIcon />, count: counts.cuts },
     {
-      view: 'deliverables',
-      label: 'Deliverables',
+      view: 'promos',
+      label: 'Promos',
       icon: <SparkleIcon />,
-      count: counts.deliverables,
+      count: counts.promos,
       alert: counts.pendingReview,
     },
     { view: 'activity', label: 'Activity', icon: <ActivityIcon />, count: counts.activeJobs },

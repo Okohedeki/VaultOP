@@ -28,25 +28,36 @@ export function App() {
   const selected = selectedId ? (vault.assets.find((a) => a.id === selectedId) ?? null) : null
   const editing = editingId ? (vault.assets.find((a) => a.id === editingId) ?? null) : null
   const activeCount = vault.jobs.filter((j) => j.state === 'queued' || j.state === 'running').length
-  const pendingReview = vault.variants.filter(
-    (v) => v.requiresReview && v.reviewState === 'pending',
-  ).length
+  // Cuts are un-gated edits; Promos are the platform-bound, gated artifacts.
+  const cuts = vault.variants.filter((v) => !v.requiresReview)
+  const promos = vault.variants.filter((v) => v.requiresReview)
+  const pendingReview = promos.filter((v) => v.reviewState === 'pending').length
 
   const openDraft = (assetId: string): void => {
     setEditingId(assetId)
     setBuildMode(true)
     setDraftMode(true)
   }
+  // Open a chosen clip in the editor (Tag or Build) — used by the sidebar pickers.
+  const openClip = (assetId: string, build: boolean): void => {
+    setEditingId(assetId)
+    setBuildMode(build)
+    setDraftMode(false)
+  }
   const exitEditor = (): void => {
     setEditingId(null)
     setBuildMode(false)
     setDraftMode(false)
   }
-  // After a render, drop the creator straight into Deliverables to watch it finish.
+  // After a render, drop the creator straight into Cuts to watch the new Cut finish.
   const finishRender = (): void => {
     exitEditor()
     setSelectedId(null)
-    setView('deliverables')
+    setView('cuts')
+  }
+  const makePromosAndShow = async (cutVariantId: string, platforms: string[]): Promise<void> => {
+    await vault.makePromos(cutVariantId, platforms)
+    setView('promos')
   }
 
   const searchMode: SearchMode | null = similarTo
@@ -102,7 +113,8 @@ export function App() {
         onAdd={vault.pickAndAdd}
         counts={{
           vault: vault.assets.length,
-          deliverables: vault.variants.length,
+          cuts: cuts.length,
+          promos: promos.length,
           pendingReview,
           activeJobs: activeCount,
         }}
@@ -158,22 +170,64 @@ export function App() {
             </div>
           ))}
 
-        {view === 'deliverables' && (
+        {(view === 'tag' || view === 'build') && (
           <div className="view">
             <header className="view__head">
               <h2 className="view__title">
-                Deliverables{' '}
+                {view === 'tag' ? 'Tag' : 'Build'}{' '}
                 <span className="view__sub">
-                  · {vault.variants.length} item{vault.variants.length === 1 ? '' : 's'}
+                  · pick a clip to {view === 'tag' ? 'tag' : 'build from'}
+                </span>
+              </h2>
+            </header>
+            <AssetList
+              loadState={vault.loadState}
+              error={vault.error}
+              assets={vault.assets}
+              jobs={vault.jobs}
+              onSelect={(a) => openClip(a.id, view === 'build')}
+            />
+          </div>
+        )}
+
+        {view === 'cuts' && (
+          <div className="view">
+            <header className="view__head">
+              <h2 className="view__title">
+                Cuts{' '}
+                <span className="view__sub">
+                  · {cuts.length} cut{cuts.length === 1 ? '' : 's'}
                 </span>
               </h2>
             </header>
             <DeliverablesPanel
-              variants={vault.variants}
+              variants={cuts}
               jobProgressFor={jobProgressFor}
               onExport={vault.exportVariant}
               onReview={setReviewingId}
-              onMakePromos={vault.makePromos}
+              onMakePromos={makePromosAndShow}
+              emptyHint="Build a cut from your tagged sections to get started."
+            />
+          </div>
+        )}
+
+        {view === 'promos' && (
+          <div className="view">
+            <header className="view__head">
+              <h2 className="view__title">
+                Promos{' '}
+                <span className="view__sub">
+                  · {promos.length} promo{promos.length === 1 ? '' : 's'}
+                </span>
+              </h2>
+            </header>
+            <DeliverablesPanel
+              variants={promos}
+              jobProgressFor={jobProgressFor}
+              onExport={vault.exportVariant}
+              onReview={setReviewingId}
+              onMakePromos={makePromosAndShow}
+              emptyHint="Open a Cut and “Make Promos” to create platform-ready, gated promos."
             />
           </div>
         )}

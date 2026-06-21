@@ -27,6 +27,7 @@ interface Props {
   onExport: (variantId: string) => Promise<string | null>
   onReview: (variantId: string) => void
   onMakePromos: (cutVariantId: string, platforms: string[]) => Promise<void>
+  emptyHint?: string
 }
 
 export function DeliverablesPanel({
@@ -35,6 +36,7 @@ export function DeliverablesPanel({
   onExport,
   onReview,
   onMakePromos,
+  emptyHint,
 }: Props) {
   const [exporting, setExporting] = useState<string | null>(null)
   const [promoFor, setPromoFor] = useState<string | null>(null)
@@ -42,7 +44,7 @@ export function DeliverablesPanel({
   const [making, setMaking] = useState(false)
 
   if (variants.length === 0) {
-    return <EmptyState title="No deliverables yet" hint="Edit a clip and render a Cut." />
+    return <EmptyState title="Nothing here yet" hint={emptyHint ?? 'Edit a clip and render a Cut.'} />
   }
 
   const togglePick = (key: string): void =>

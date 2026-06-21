@@ -136,10 +136,10 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     await wait(600) // onRendered returns to the segment grid
 
     // ── 4. Cut → Promos: pick a platform → gated promo renders ───────────────
-    // After rendering, the app lands on the Deliverables view automatically.
+    // After rendering, the app lands on the Cuts view automatically.
     await wait(600)
-    checks.deliverablesView = await js<boolean>(
-      `!!document.querySelector('.side__item.is-active[data-view="deliverables"]')`,
+    checks.cutsView = await js<boolean>(
+      `!!document.querySelector('.side__item.is-active[data-view="cuts"]')`,
     )
     await js(
       `[...document.querySelectorAll('.content button')].find(b=>/make promos/i.test(b.textContent))?.click(); true`,
@@ -148,6 +148,10 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     checks.promoPicker = await js<boolean>(`!!document.querySelector('.promo-pick')`)
     await js(
       `[...document.querySelectorAll('.promo-pick button')].find(b=>/create .*promo/i.test(b.textContent))?.click(); true`,
+    )
+    await wait(400) // makePromos resolves → app switches to the Promos view
+    checks.promosView = await js<boolean>(
+      `!!document.querySelector('.side__item.is-active[data-view="promos"]')`,
     )
     checks.promoRendered = await pollUntil(
       () => ctx!.repo.listVariants().some((v) => v.type === 'promo' && v.renderState === 'ready'),
@@ -179,6 +183,20 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
         `|| [...document.querySelectorAll('.vop-badge')].some(b=>/safe to post/i.test(b.textContent))`,
     )
     await shot('6-approved')
+
+    // ── 7. New nav: Tag / Build are first-class destinations (clip pickers) ───
+    await js(`document.querySelector('.side__item[data-view="tag"]')?.click(); true`)
+    await wait(350)
+    checks.tagPicker = await js<boolean>(
+      `/pick a clip/i.test(document.querySelector('.view__head')?.textContent||'') ` +
+        `&& document.querySelectorAll('.clip').length >= 1`,
+    )
+    await js(`document.querySelector('.side__item[data-view="build"]')?.click(); true`)
+    await wait(350)
+    checks.buildPicker = await js<boolean>(
+      `/pick a clip/i.test(document.querySelector('.view__head')?.textContent||'')`,
+    )
+    await shot('7-tag-build-pickers')
 
     const ok = Object.values(checks).every((v) => v === true)
     log.info('uitest.result', { ...checks, shotDir })

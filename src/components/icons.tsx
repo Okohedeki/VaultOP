@@ -44,6 +44,37 @@ export function ActivityIcon(p: SVGProps<SVGSVGElement>) {
   )
 }
 
+/** Tag — a label with a punch hole (the Tagger). */
+export function TagIcon(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 3H5a2 2 0 0 0-2 2v7l9 9 9-9-9-9z" />
+      <circle cx="7.5" cy="7.5" r="1.3" />
+    </svg>
+  )
+}
+
+/** Build — scissors (assemble/cut Sections into a Cut). */
+export function BuildIcon(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="6" cy="6" r="2.4" />
+      <circle cx="6" cy="18" r="2.4" />
+      <path d="M8.1 7.7L20 16M8.1 16.3L20 8" />
+    </svg>
+  )
+}
+
+/** Cuts — a play triangle in a frame (a rendered edit). */
+export function CutsIcon(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M10 8.5l5 3.5-5 3.5z" />
+    </svg>
+  )
+}
+
 export function SearchIcon(p: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base(p)}>

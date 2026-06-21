@@ -1,5 +1,5 @@
 import './App.css'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useVault } from './state/useVault'
 import { Dropzone } from './components/Dropzone'
 import { AssetList } from './components/AssetList'
@@ -9,6 +9,9 @@ import { DeliverablesPanel } from './components/DeliverablesPanel'
 import { JobsPanel } from './components/JobsPanel'
 import { ReviewModal } from './components/ReviewModal'
 import { Sidebar, type View } from './components/Sidebar'
+import { Toast, type ToastMsg } from './components/Toast'
+import { CutsIcon, SparkleIcon } from './components/icons'
+import { Button } from './design/primitives'
 import { Tagger } from './editor/Tagger'
 import { Builder } from './editor/Builder'
 import type { SearchMode } from './state/useSearch'
@@ -24,6 +27,28 @@ export function App() {
   const [query, setQuery] = useState('')
   const [similarTo, setSimilarTo] = useState<string | null>(null)
   const [reviewingId, setReviewingId] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastMsg | null>(null)
+
+  // Success Moments — celebrate earned milestones (a Cut renders, a Promo clears the
+  // gate). Skip the first snapshot so existing variants don't fire on load.
+  const prevVariants = useRef<Map<string, { r: string; rev: string }> | null>(null)
+  useEffect(() => {
+    const prev = prevVariants.current
+    if (prev) {
+      for (const v of vault.variants) {
+        const p = prev.get(v.id)
+        if (!p) continue
+        if (p.r !== 'ready' && v.renderState === 'ready' && v.type === 'cut') {
+          setToast({ id: Date.now(), text: 'Cut ready', emoji: '🎬', tone: 'ok' })
+        } else if (p.rev !== 'approved' && v.reviewState === 'approved') {
+          setToast({ id: Date.now() + 1, text: 'Safe to post', emoji: '✓', tone: 'ok' })
+        }
+      }
+    }
+    prevVariants.current = new Map(
+      vault.variants.map((v) => [v.id, { r: v.renderState, rev: v.reviewState }]),
+    )
+  }, [vault.variants])
 
   const selected = selectedId ? (vault.assets.find((a) => a.id === selectedId) ?? null) : null
   const editing = editingId ? (vault.assets.find((a) => a.id === editingId) ?? null) : null
@@ -99,6 +124,7 @@ export function App() {
         ) : (
           <Tagger asset={editing} onBack={exitEditor} onBuild={() => setBuildMode(true)} />
         )}
+        <Toast toast={toast} onDone={() => setToast(null)} />
       </div>
     )
   }
@@ -206,7 +232,14 @@ export function App() {
               onExport={vault.exportVariant}
               onReview={setReviewingId}
               onMakePromos={makePromosAndShow}
-              emptyHint="Build a cut from your tagged sections to get started."
+              emptyTitle="No cuts yet"
+              emptyHint="Tag a clip’s best moments, then assemble them into a cut — your highlight, compilation, or full edit."
+              emptyIcon={<CutsIcon width={30} height={30} />}
+              emptyAction={
+                <Button variant="primary" onClick={() => goView('build')}>
+                  ✂ Start a cut
+                </Button>
+              }
             />
           </div>
         )}
@@ -227,7 +260,14 @@ export function App() {
               onExport={vault.exportVariant}
               onReview={setReviewingId}
               onMakePromos={makePromosAndShow}
-              emptyHint="Open a Cut and “Make Promos” to create platform-ready, gated promos."
+              emptyTitle="No promos yet"
+              emptyHint="Promos are platform-ready versions of a cut — reframed and made safe to post. Make them from a finished cut."
+              emptyIcon={<SparkleIcon width={30} height={30} />}
+              emptyAction={
+                <Button variant="primary" onClick={() => goView('cuts')}>
+                  ✦ Go to Cuts
+                </Button>
+              }
             />
           </div>
         )}
@@ -249,6 +289,8 @@ export function App() {
           onDone={() => setReviewingId(null)}
         />
       )}
+
+      <Toast toast={toast} onDone={() => setToast(null)} />
     </div>
   )
 }

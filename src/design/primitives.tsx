@@ -42,12 +42,23 @@ export function Skeleton({ height = 16, width = '100%' }: { height?: number; wid
   return <div className="vop-skeleton" style={{ height, width }} />
 }
 
-export function EmptyState({ title, hint, icon }: { title: string; hint?: string; icon?: ReactNode }) {
+export function EmptyState({
+  title,
+  hint,
+  icon,
+  action,
+}: {
+  title: string
+  hint?: string
+  icon?: ReactNode
+  action?: ReactNode
+}) {
   return (
     <div className="vop-empty">
-      {icon}
+      {icon && <div className="vop-empty__icon">{icon}</div>}
       <div className="vop-empty__title">{title}</div>
-      {hint && <div>{hint}</div>}
+      {hint && <div className="vop-empty__hint">{hint}</div>}
+      {action && <div className="vop-empty__action">{action}</div>}
     </div>
   )
 }

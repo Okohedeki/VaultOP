@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Variant } from '@shared/domain'
 import { PLATFORMS } from '@shared/platforms'
 import { Badge, Button, Card, EmptyState, ProgressBar, Spinner } from '../design/primitives'
@@ -27,7 +27,10 @@ interface Props {
   onExport: (variantId: string) => Promise<string | null>
   onReview: (variantId: string) => void
   onMakePromos: (cutVariantId: string, platforms: string[]) => Promise<void>
+  emptyTitle?: string
   emptyHint?: string
+  emptyIcon?: ReactNode
+  emptyAction?: ReactNode
 }
 
 export function DeliverablesPanel({
@@ -36,7 +39,10 @@ export function DeliverablesPanel({
   onExport,
   onReview,
   onMakePromos,
+  emptyTitle,
   emptyHint,
+  emptyIcon,
+  emptyAction,
 }: Props) {
   const [exporting, setExporting] = useState<string | null>(null)
   const [promoFor, setPromoFor] = useState<string | null>(null)
@@ -44,7 +50,14 @@ export function DeliverablesPanel({
   const [making, setMaking] = useState(false)
 
   if (variants.length === 0) {
-    return <EmptyState title="Nothing here yet" hint={emptyHint ?? 'Edit a clip and render a Cut.'} />
+    return (
+      <EmptyState
+        title={emptyTitle ?? 'Nothing here yet'}
+        hint={emptyHint ?? 'Edit a clip and render a Cut.'}
+        icon={emptyIcon}
+        action={emptyAction}
+      />
+    )
   }
 
   const togglePick = (key: string): void =>

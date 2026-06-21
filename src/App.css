@@ -813,3 +813,102 @@
   font-size: 10px;
   color: var(--fg-faint);
 }
+
+/* ── Emotional UX: empty states, success toasts, micro-interactions ── */
+
+/* richer empty states (Empty States play) */
+.vop-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-lg);
+  color: var(--accent);
+  background: var(--grad-soft);
+  border: 1px solid var(--border);
+  margin-bottom: var(--sp-2);
+}
+.vop-empty__hint {
+  max-width: 46ch;
+  line-height: 1.55;
+}
+.vop-empty__action {
+  margin-top: var(--sp-4);
+}
+
+/* Success Moment toast */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, var(--bg-elev-2), var(--bg-elev));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  padding: 12px 22px;
+  box-shadow: var(--shadow-3);
+  z-index: 200;
+  animation: toast-in 280ms var(--ease);
+}
+.toast--ok {
+  border-color: rgba(52, 211, 153, 0.55);
+  box-shadow: var(--shadow-3), 0 0 30px rgba(52, 211, 153, 0.22);
+}
+.toast--accent {
+  border-color: rgba(196, 98, 245, 0.5);
+  box-shadow: var(--shadow-3), var(--shadow-accent);
+}
+.toast__emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+.toast__text {
+  font-weight: 650;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* Micro-interactions: a gentle reveal when switching content views */
+.view {
+  animation: view-in 220ms var(--ease);
+}
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* press feedback on the primary CTA + nav (tactile, intentional) */
+.side__add:active,
+.vop-btn--primary:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+}
+.side__item:active {
+  transform: translateX(1px);
+}
+
+/* Respect reduced-motion for the keyframe animations (tokens already zero transitions) */
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .view {
+    animation: none;
+  }
+}

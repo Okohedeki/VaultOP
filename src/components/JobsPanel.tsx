@@ -1,5 +1,6 @@
 import type { Job } from '@shared/domain'
 import { Badge, Card, EmptyState, ProgressBar, Spinner } from '../design/primitives'
+import { ActivityIcon } from './icons'
 
 const TONE: Record<Job['state'], 'default' | 'ok' | 'warn' | 'danger' | 'accent'> = {
   queued: 'default',
@@ -13,7 +14,13 @@ export function JobsPanel({ jobs }: { jobs: Job[] }) {
   const recent = jobs.filter((j) => j.state === 'done' || j.state === 'failed').slice(0, 8)
 
   if (jobs.length === 0) {
-    return <EmptyState title="No jobs yet" hint="Processing shows up here." />
+    return (
+      <EmptyState
+        title="All quiet"
+        hint="Encoding, scene-splitting, and renders show up here with live progress as you work."
+        icon={<ActivityIcon width={30} height={30} />}
+      />
+    )
   }
 
   return (

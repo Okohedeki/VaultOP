@@ -136,9 +136,13 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     await wait(600) // onRendered returns to the segment grid
 
     // ── 4. Cut → Promos: pick a platform → gated promo renders ───────────────
-    await wait(500) // let the Cut deliverable broadcast into the side panel
+    // After rendering, the app lands on the Deliverables view automatically.
+    await wait(600)
+    checks.deliverablesView = await js<boolean>(
+      `!!document.querySelector('.side__item.is-active[data-view="deliverables"]')`,
+    )
     await js(
-      `[...document.querySelectorAll('.app__side button')].find(b=>/make promos/i.test(b.textContent))?.click(); true`,
+      `[...document.querySelectorAll('.content button')].find(b=>/make promos/i.test(b.textContent))?.click(); true`,
     )
     await wait(300)
     checks.promoPicker = await js<boolean>(`!!document.querySelector('.promo-pick')`)
@@ -171,7 +175,7 @@ export async function runUiTest(schemaSql: string, shotDir: string): Promise<boo
     }, 40_000)
     await wait(900) // let the unlocked state broadcast to the UI
     checks.exportUnlocked = await js<boolean>(
-      `[...document.querySelectorAll('.app__side button')].some(b=>/export/i.test(b.textContent)) ` +
+      `[...document.querySelectorAll('.content button')].some(b=>/export/i.test(b.textContent)) ` +
         `|| [...document.querySelectorAll('.vop-badge')].some(b=>/safe to post/i.test(b.textContent))`,
     )
     await shot('6-approved')

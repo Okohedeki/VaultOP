@@ -54,7 +54,7 @@ export function DeliverablesPanel({
     })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)', overflow: 'auto' }}>
+    <div className="panel-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)', overflow: 'auto' }}>
       {variants.map((v) => (
         <Card key={v.id} className="job">
           <div className="job__row">

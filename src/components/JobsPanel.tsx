@@ -17,7 +17,7 @@ export function JobsPanel({ jobs }: { jobs: Job[] }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)', overflow: 'auto' }}>
+    <div className="panel-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)', overflow: 'auto' }}>
       {active.map((j) => (
         <Card key={j.id} className="job">
           <div className="job__row">

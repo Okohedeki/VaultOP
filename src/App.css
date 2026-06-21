@@ -1,38 +1,54 @@
 .app {
   display: flex;
-  flex-direction: column;
   height: 100%;
+  min-height: 0;
+}
+/* The editor is a focused, full-window takeover (no sidebar). */
+.app--editor {
+  display: block;
+  padding: var(--sp-5) var(--sp-6);
 }
 
-.app__header {
+/* ── Sidebar: owns navigation + global controls ───────────────────────────── */
+.side {
+  width: 244px;
+  flex: none;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--sp-4) var(--sp-6);
-  border-bottom: 1px solid var(--hairline);
-  background: linear-gradient(180deg, rgba(20, 20, 31, 0.7), transparent);
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  background: linear-gradient(180deg, var(--bg-elev), var(--bg-deep));
+  border-right: 1px solid var(--hairline);
   -webkit-app-region: drag;
 }
-.app__header button {
+.side button,
+.side input {
   -webkit-app-region: no-drag;
 }
-.app__brand {
+.side__brand {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+  padding: 0 var(--sp-2);
 }
 .app__logo {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 9px;
   background: var(--grad);
   box-shadow: var(--shadow-accent);
   display: grid;
   place-items: center;
   color: #fff;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 800;
   flex: none;
+}
+.side .app__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.1;
 }
 .app__brand h1 {
   font-size: var(--fs-xl);
@@ -41,36 +57,186 @@
 }
 .app__brand .tag {
   color: var(--fg-faint);
-  font-size: var(--fs-xs);
+  font-size: 11px;
   font-weight: 500;
-  margin-left: 2px;
 }
 
-.app__body {
+.side__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--grad);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  padding: 11px;
+  font-size: var(--fs-md);
+  font-weight: 650;
+  cursor: pointer;
+  box-shadow: var(--shadow-accent);
+  transition: transform var(--t-fast), filter var(--t-fast);
+}
+.side__add:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+.side__add-plus {
+  font-size: 16px;
+}
+
+.side__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.side__search-icon {
+  position: absolute;
+  left: 11px;
+  color: var(--fg-faint);
+  font-size: 14px;
+  pointer-events: none;
+}
+.side__search input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 9px 12px 9px 30px;
+  color: var(--fg);
+  font-size: var(--fs-sm);
+}
+.side__search input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.side__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: var(--sp-2);
+}
+.side__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  background: none;
+  border: none;
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  color: var(--fg-muted);
+  font-size: var(--fs-md);
+  font-weight: 550;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.side__item:hover {
+  background: var(--bg-elev-2);
+  color: var(--fg);
+}
+.side__item.is-active {
+  background: var(--grad-soft);
+  color: var(--fg);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.side__item-icon {
+  width: 18px;
+  text-align: center;
+  font-size: 15px;
+  opacity: 0.9;
+}
+.side__item-label {
   flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: var(--sp-5);
-  padding: var(--sp-5);
-  min-height: 0;
 }
-@media (max-width: 1040px) {
-  .app__body {
-    grid-template-columns: 1fr;
-  }
+.side__item-count {
+  font-size: var(--fs-xs);
+  color: var(--fg-faint);
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-elev-2);
+  border-radius: var(--r-pill);
+  padding: 1px 8px;
 }
-/* The editor takes the whole body — single column, no side panel. */
-.app__body--editor {
-  display: block;
-  grid-template-columns: none;
+.side__item-alert {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: #fff;
+  background: var(--warn);
+  border-radius: var(--r-pill);
+  padding: 1px 8px;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
 }
 
-.app__main,
-.app__side {
+.side__foot {
+  margin-top: auto;
+  padding: var(--sp-3) var(--sp-2) 0;
+  border-top: 1px solid var(--hairline);
+}
+.side__status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+}
+.side__status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+}
+.side__status.is-busy .side__status-dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: vop-glow-pulse 1.4s ease infinite;
+}
+
+/* ── Content: one focused view at a time ──────────────────────────────────── */
+.content {
+  flex: 1;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  padding: var(--sp-6);
+  overflow: hidden;
+}
+.view {
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-4);
+  min-height: 0;
+  height: 100%;
+}
+.view__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.view__title {
+  font-size: var(--fs-2xl);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.view__sub {
+  color: var(--fg-faint);
+  font-weight: 500;
+  font-size: var(--fs-lg);
+}
+/* The active view (and the segment grid) fills the content area… */
+.content > .view,
+.content > .seg {
+  flex: 1;
+  min-height: 0;
+}
+/* …and each view's scrollable body fills what's left under its header. */
+.view > .clip-grid,
+.view > .seg__grid,
+.view > .panel-scroll {
+  flex: 1;
+  min-height: 0;
 }
 
 .section-title {

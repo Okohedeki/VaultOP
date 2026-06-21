@@ -192,6 +192,15 @@ export const TextOverlay = z.object({
 })
 export type TextOverlay = z.infer<typeof TextOverlay>
 
+/** A background-music track (the editor's second track): vault-encrypted audio
+ *  mixed under the Cut's own audio at a chosen volume, looped/trimmed to length. */
+export const MusicTrack = z.object({
+  blobHash: z.string(),
+  filename: z.string().optional(),
+  volume: z.number().min(0).max(1).default(0.3),
+})
+export type MusicTrack = z.infer<typeof MusicTrack>
+
 export const Edl = z.object({
   aspect: Aspect,
   clips: z.array(EdlClip).min(1),
@@ -199,6 +208,8 @@ export const Edl = z.object({
   captions: z.boolean().optional().default(false),
   /** Manual text overlays (titles) burned on the output timeline. */
   overlays: z.array(TextOverlay).optional().default([]),
+  /** Optional background-music track mixed under the Cut. */
+  music: MusicTrack.nullish(),
 })
 export type Edl = z.infer<typeof Edl>
 

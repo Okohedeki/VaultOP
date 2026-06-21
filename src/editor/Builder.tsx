@@ -66,7 +66,13 @@ export function Builder({ asset, onBack, onRendered, draft }: Props) {
   const [aspect, setAspect] = useState<Aspect>('vertical')
   const [captions, setCaptions] = useState(false)
   const [overlays, setOverlays] = useState<Overlay[]>([])
+  const [music, setMusic] = useState<{ blobHash: string; filename: string; volume: number } | null>(null)
   const [rendering, setRendering] = useState(false)
+
+  const pickMusic = useCallback(async () => {
+    const r = await getBridge().invoke('music:import', {})
+    if (r.music) setMusic({ ...r.music, volume: 0.3 })
+  }, [])
 
   const master = sx.master
 
@@ -160,13 +166,16 @@ export function Builder({ asset, onBack, onRendered, draft }: Props) {
               endMs: Math.round(o.endSec * 1000),
               position: o.position,
             })),
+          music: music
+            ? { blobHash: music.blobHash, filename: music.filename, volume: music.volume }
+            : null,
         },
       })
       onRendered()
     } finally {
       setRendering(false)
     }
-  }, [clips, aspect, captions, overlays, onRendered])
+  }, [clips, aspect, captions, overlays, music, onRendered])
 
   if (sx.loadState === 'loading') {
     return (
@@ -282,6 +291,29 @@ export function Builder({ asset, onBack, onRendered, draft }: Props) {
               <strong>CC</strong>
               <em>{captions ? 'on' : 'off'}</em>
             </button>
+            {music ? (
+              <div className="bld__music is-on" title={music.filename}>
+                <span className="bld__music-name">🎵 {music.filename}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={music.volume}
+                  onChange={(e) => setMusic((m) => (m ? { ...m, volume: Number(e.target.value) } : m))}
+                  aria-label="Music volume"
+                />
+                <span className="bld__music-vol">{Math.round(music.volume * 100)}%</span>
+                <button className="bld__music-x" onClick={() => setMusic(null)} aria-label="Remove music">
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button className="bld__music" onClick={() => void pickMusic()} title="Add a background music track">
+                <strong>🎵 Music</strong>
+                <em>add</em>
+              </button>
+            )}
           </div>
 
           {clips.length === 0 ? (

@@ -19,6 +19,7 @@ import {
   burnCaptions,
   concatClips,
   extractThumbnail,
+  mixMusic,
   probeHasAudio,
   renderGif,
   renderNormalizedClip,
@@ -147,6 +148,8 @@ export function makeRenderHandler(deps: {
     let captionedFile: string | null = null
     let assFile: string | null = null
     let overlaidFile: string | null = null
+    let musicSrc: string | null = null
+    let musicMixed: string | null = null
 
     try {
       // Decrypt each unique master once.
@@ -228,7 +231,25 @@ export function makeRenderHandler(deps: {
           }
         }
       }
-      setProgress(0.9)
+      // Background music (the second track) — mixed under the cut's own audio.
+      // Skipped for GIFs (no audio track).
+      if (recipe.kind === 'edl' && !asGif) {
+        const music = (recipe.edl as { music?: { blobHash?: string; volume?: number } }).music
+        if (music?.blobHash) {
+          musicSrc = join(paths.tmpDir, `${randomUUID()}.music`)
+          musicMixed = join(paths.tmpDir, `${randomUUID()}.mix.mp4`)
+          await blobs.getToFile(music.blobHash, musicSrc)
+          await mixMusic(
+            finalFile,
+            musicSrc,
+            typeof music.volume === 'number' ? music.volume : 0.3,
+            musicMixed,
+          )
+          finalFile = musicMixed
+          log.info('render.music', { variantId })
+        }
+      }
+      setProgress(0.92)
 
       if (asGif) {
         const gif = join(paths.tmpDir, `${randomUUID()}.gif`)
@@ -277,6 +298,8 @@ export function makeRenderHandler(deps: {
         captionedFile ? rm(captionedFile, { force: true }) : Promise.resolve(),
         assFile ? rm(assFile, { force: true }) : Promise.resolve(),
         overlaidFile ? rm(overlaidFile, { force: true }) : Promise.resolve(),
+        musicSrc ? rm(musicSrc, { force: true }) : Promise.resolve(),
+        musicMixed ? rm(musicMixed, { force: true }) : Promise.resolve(),
       ])
     }
   }

@@ -342,6 +342,43 @@ export async function burnCaptions(input: string, srtPath: string, output: strin
   ])
 }
 
+/** Mix a background-music track under a clip's own audio (music looped + trimmed to
+ *  the clip length). volume is the music gain (0..1); the main audio stays at full. */
+export async function mixMusic(
+  input: string,
+  musicPath: string,
+  volume: number,
+  output: string,
+): Promise<void> {
+  const v = Math.max(0, Math.min(1, volume))
+  await run(FFMPEG_BIN, [
+    '-i',
+    input,
+    '-stream_loop',
+    '-1', // loop the music to cover the whole cut…
+    '-i',
+    musicPath,
+    '-filter_complex',
+    `[1:a]volume=${v.toFixed(3)}[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=0[a]`,
+    '-map',
+    '0:v',
+    '-map',
+    '[a]',
+    '-c:v',
+    'copy', // video already rendered — only the audio changes
+    '-c:a',
+    'aac',
+    '-ar',
+    '48000',
+    '-ac',
+    '2',
+    '-movflags',
+    '+faststart',
+    '-y',
+    output,
+  ])
+}
+
 /** Convert a rendered MP4 into a high-quality looping preview GIF. */
 export async function renderGif(
   input: string,

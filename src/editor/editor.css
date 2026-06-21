@@ -784,3 +784,63 @@ kbd {
 .bld__ov-x:hover {
   color: var(--danger);
 }
+
+/* ── Builder: music (second track) ── */
+.bld__music {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 8px 14px;
+  cursor: pointer;
+  color: var(--fg-muted);
+}
+.bld__music strong {
+  font-size: var(--fs-sm);
+  color: var(--fg);
+}
+.bld__music em {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+}
+.bld__music.is-on {
+  flex-direction: row;
+  gap: 8px;
+  cursor: default;
+  border-color: var(--accent);
+  background: var(--grad-soft);
+}
+.bld__music-name {
+  font-size: var(--fs-xs);
+  color: var(--fg);
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bld__music input[type='range'] {
+  width: 70px;
+  accent-color: var(--accent);
+}
+.bld__music-vol {
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+}
+.bld__music-x {
+  background: none;
+  border: none;
+  color: var(--fg-faint);
+  cursor: pointer;
+  font-size: 13px;
+}
+.bld__music-x:hover {
+  color: var(--danger);
+}

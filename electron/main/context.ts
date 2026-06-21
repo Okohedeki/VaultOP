@@ -43,6 +43,8 @@ export interface VaultContext {
   createCut(edl: Edl): { variantId: string }
   /** Turn a finished Cut into platform-bound Promos (reframed + capped), each gated. */
   makePromos(cutVariantId: string, platformKeys: string[]): { variantIds: string[] }
+  /** Import an audio file into the encrypted vault for use as a music track. */
+  importMusic(srcPath: string): Promise<{ blobHash: string; filename: string }>
   /** One master → the full deliverable set: vertical + square teasers, preview GIF, paid cut. */
   createFanout(assetId: string): { variantIds: string[] }
   /** Export an approved variant with a per-fan forensic watermark burned in. */
@@ -171,6 +173,11 @@ export function createVaultContext(opts: CreateContextOpts): VaultContext {
       })
       enqueueRender(variantId)
       return { variantId }
+    },
+    async importMusic(srcPath: string): Promise<{ blobHash: string; filename: string }> {
+      const blob = await blobs.putFile(srcPath) // encrypted + content-addressed in the vault
+      const { basename } = await import('node:path')
+      return { blobHash: blob.hash, filename: basename(srcPath) }
     },
     createCut(edl: Edl): { variantId: string } {
       if (edl.clips.length === 0) throw new Error('cut has no clips')

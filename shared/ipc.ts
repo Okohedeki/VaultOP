@@ -113,6 +113,12 @@ export const ipcContract = {
     request: z.object({ cutVariantId: z.string(), platforms: z.array(z.string()).min(1) }),
     response: z.object({ variantIds: z.array(z.string()) }),
   },
+  'music:import': {
+    request: z.object({}),
+    response: z.object({
+      music: z.object({ blobHash: z.string(), filename: z.string() }).nullable(),
+    }),
+  },
   'assembly:teaser': {
     request: z.object({ assetId: z.string() }),
     response: z.object({ variantId: z.string() }),

@@ -11,7 +11,7 @@ import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 process.env.VAULTOP_NO_ML = '1' // keep the smoke offline + fast (ML verified separately)
 import { createVaultContext } from '../electron/main/context'
-import { FFMPEG_BIN, ffprobe } from '../electron/main/ffmpeg'
+import { FFMPEG_BIN, ffprobe, probeHasAudio } from '../electron/main/ffmpeg'
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`ASSERT FAILED: ${msg}`)
@@ -215,6 +215,33 @@ async function main(): Promise<void> {
     console.log(
       `· captions + text overlay: SRT + ASS title burned into Cut ${capr.width}x${capr.height} ✓`,
     )
+
+    // 4e-quinquies. Music (the second track): import audio → mix under a Cut.
+    const musicFile = join(work, 'music.mp3')
+    spawnSync(
+      FFMPEG_BIN,
+      ['-y', '-f', 'lavfi', '-i', 'sine=frequency=220:duration=3', '-q:a', '4', musicFile],
+      { encoding: 'utf8' },
+    )
+    const mus = await ctx.importMusic(musicFile)
+    assert(mus.blobHash.length > 0, 'music import should return a blob hash')
+    assert(existsSync(join(ctx.paths.blobsDir, mus.blobHash)), 'imported music should be encrypted in the vault')
+    const musicCut = ctx.createCut({
+      aspect: 'square',
+      captions: false,
+      overlays: [],
+      music: { blobHash: mus.blobHash, filename: mus.filename, volume: 0.4 },
+      clips: [{ sectionId: null, masterId: master.id, startMs: 0, endMs: 1500, speed: 1 }],
+    })
+    await ctx.queue.drain()
+    const mv = ctx.repo.getVariant(musicCut.variantId)
+    assert(mv?.renderState === 'ready', `music cut render state '${mv?.renderState}'`)
+    const musOut = join(work, 'music-cut.mp4')
+    await ctx.exportVariant(musicCut.variantId, musOut)
+    const mr = await ffprobe(musOut)
+    assert(mr.width === 1080 && mr.height === 1080, `music cut dims ${mr.width}x${mr.height}`)
+    assert(await probeHasAudio(musOut), 'music cut must have a mixed audio track')
+    console.log(`· music: imported audio encrypted + mixed under Cut ${mr.width}x${mr.height} ✓`)
 
     // 4e-quater. Promos (E4): turn the Cut into platform-bound Promos → reframed,
     // capped, and gated. The Cut itself had no gate; its Promos do.

@@ -100,6 +100,18 @@ export function registerIpc(ctx: VaultContext, getWindow: () => BrowserWindow | 
 
   handle('promos:create', async (req) => ctx.makePromos(req.cutVariantId, req.platforms))
 
+  handle('music:import', async () => {
+    const win = getWindow()
+    const res = await dialog.showOpenDialog(win ?? undefined!, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Audio', extensions: ['mp3', 'm4a', 'aac', 'wav', 'flac', 'ogg', 'mp4', 'mov'] },
+      ],
+    })
+    if (res.canceled || !res.filePaths[0]) return { music: null }
+    return { music: await ctx.importMusic(res.filePaths[0]) }
+  })
+
   handle('assembly:teaser', async (req) => ctx.createTeaser(req.assetId))
 
   handle('assembly:compilation', async (req) =>
